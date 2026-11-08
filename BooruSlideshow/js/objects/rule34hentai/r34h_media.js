@@ -82,7 +82,7 @@ class Rule34HentaiMedia
 			if (a == null || a.status !== 200 || !(a.data instanceof ArrayBuffer))
 			{
 				Rule34HentaiMedia.warn(a == null
-					? (relayed.tabCount == 0 ? 'no open rule34hentai.net tab' : 'the open tab did not answer; reload that tab (F5)')
+					? (relayed.tabCount == 0 ? 'no open rule34hentai.net tab' : 'the open tab did not answer; reload that tab (F5). Details: ' + (Rule34HentaiMedia.fetcher.problems.join(' | ') || 'none'))
 					: 'the tab got status ' + a.status + (a.type ? ' (' + a.type + ')' : ''));
 				return null;
 			}

@@ -9,6 +9,13 @@ class Rule34HentaiFetcher
 		this.chrome = chromeApi;
 		this.fetchFn = fetchFn;
 		this.preferRelay = false;
+		this.problems = [];
+	}
+
+	note(problem)
+	{
+		if (this.problems.length < 6)
+			this.problems.push(String(problem).substring(0, 200));
 	}
 
 	static get HELP()
@@ -35,8 +42,16 @@ class Rule34HentaiFetcher
 	ask(tabId, url, type = 'bs-r34h-fetch')
 	{
 		return new Promise((resolve) => {
-			try { this.chrome.tabs.sendMessage(tabId, { type: type, url: url }, (r) => resolve(this.chrome.runtime.lastError ? null : r)); }
-			catch (e) { resolve(null); }
+			try { this.chrome.tabs.sendMessage(tabId, { type: type, url: url }, (r) => {
+				const err = this.chrome.runtime.lastError;
+
+				if (err) this.note('tab ' + tabId + ': ' + (err.message || err));
+				else if (r == null) this.note('tab ' + tabId + ' answered with nothing');
+				else if (r.error) this.note('tab ' + tabId + ' replied: ' + r.error);
+
+				resolve(err ? null : r);
+			}); }
+			catch (e) { this.note('sendMessage threw: ' + e.message); resolve(null); }
 		});
 	}
 
@@ -47,7 +62,10 @@ class Rule34HentaiFetcher
 		try
 		{
 			if (!this.chrome.scripting || !this.chrome.scripting.executeScript)
+			{
+				this.note('scripting API not available');
 				return false;
+			}
 
 			await this.chrome.scripting.executeScript({ target: { tabId: tabId }, files: ['js/content/rule34hentai_relay.js'] });
 
@@ -55,6 +73,7 @@ class Rule34HentaiFetcher
 		}
 		catch (e)
 		{
+			this.note('injecting the helper failed: ' + (e && e.message || e));
 			return false;
 		}
 	}

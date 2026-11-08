@@ -71,7 +71,7 @@ class SiteManagerRule34Hentai extends SiteManager
 		if (parsed.popular == null)
 		{
 			const query = Rule34HentaiSearch.buildListQuery(parsed.terms, this.getAllowedRatings());
-			this.webRequester.plan = { mode: 'list', keepEntry: this.keepListEntry.bind(this) };
+			this.webRequester.plan = { mode: 'list', keepEntry: this.keepListEntry.bind(this), needDetail: this.sortNeedsScore(parsed.terms) };
 
 			return Rule34HentaiSearch.buildListUrl(query, pageNumber);
 		}
@@ -82,16 +82,32 @@ class SiteManagerRule34Hentai extends SiteManager
 		if (pageNumber == 1 && filter.unsupported.length > 0)
 			this.sitesManager.displayWarningMessage('Not supported together with popular_by_' + parsed.popular + ' and ignored: ' + filter.unsupported.join(' '));
 
-		this.webRequester.plan = { mode: 'popular', filter: filter, keepEntry: this.keepListEntry.bind(this) };
+		const allowed = this.getAllowedRatings();
+		const needDetail = filter.needsDetail || this.sortNeedsScore(parsed.terms) || (allowed != null && allowed.length < 3);
+		const hasOrderTerm = parsed.terms.some((t) => /^(order|sort)[:=]/i.test(t));
+
+		// Posts of a popular page come in the site's own order (not date order). Unless the search sorts
+		// itself, keep that order by giving each post a date just below the previous one.
+		const periodEnd = parsed.popular == 'year' ? Date.UTC(period.year + 1, 0, 1)
+			: parsed.popular == 'month' ? Date.UTC(period.year, period.month, 1)
+			: Date.UTC(period.year, period.month - 1, period.day + 1);
+
+		this.webRequester.plan = { mode: 'popular', filter: filter, keepEntry: this.keepListEntry.bind(this), needDetail: needDetail, rankBase: hasOrderTerm ? 0 : periodEnd };
 		this.beforeStart = period.beforeStart;
 
 		if (period.beforeStart)
 		{
 			// Nothing exists before the site started; avoid pointless requests.
-			this.webRequester.plan = { mode: 'popular', filter: filter, none: true, keepEntry: this.keepListEntry.bind(this) };
+			this.webRequester.plan = { mode: 'popular', filter: filter, none: true };
 		}
 
 		return Rule34HentaiSearch.buildPopularUrl(parsed.popular, period);
+	}
+
+	// Sorting by score needs each post's score, which only the post page shows.
+	sortNeedsScore(terms)
+	{
+		return terms.some((t) => /^(order|sort)[:=].*score/i.test(t));
 	}
 
 	// Cheap checks on what the list page shows, so unwanted posts never cost a detail request.
@@ -140,8 +156,14 @@ class SiteManagerRule34Hentai extends SiteManager
 
 		let added = 0;
 
-		for (const p of data.posts)
+		const plan = this.webRequester.plan || {};
+
+		data.posts.forEach((p, index) => {
+			if (plan.mode == 'popular' && plan.rankBase > 0)
+				p.dateMs = plan.rankBase - (index + 1) * 1000;
+
 			added += this.addSlide(p) ? 1 : 0;
+		});
 
 		const isPopular = this.webRequester.plan && this.webRequester.plan.mode == 'popular';
 

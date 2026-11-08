@@ -66,12 +66,14 @@ test('search parse: popular terms, dates, invalid input', () => {
 });
 
 test('list query: normalises rating=/order=, adds rating from checkboxes, URL-encodes', () => {
-	assert.strictEqual(S.buildListQuery(['cat', 'rating=e', 'order=score_desc'], ['s']), 'cat rating:e order:score_desc');
-	assert.strictEqual(S.buildListQuery(['cat', 'sort:score'], ['e']), 'cat order:score_desc rating:e');
+	assert.strictEqual(S.buildListQuery(['cat', 'rating:e', 'order:score_desc'], ['s']), 'cat rating=e order=score_desc');
+	assert.strictEqual(S.buildListQuery(['cat', 'sort:score'], ['e']), 'cat order=score_desc rating=e');
 	assert.strictEqual(S.buildListQuery(['cat'], ['s', 'q', 'e']), 'cat');
-	assert.strictEqual(S.buildListUrl('cat rating:e', 3), 'https://rule34hentai.net/post/list/cat%20rating%3Ae/3');
+	assert.strictEqual(S.buildListUrl('cat rating=e', 3), 'https://rule34hentai.net/post/list/cat+rating%3De/3');
+	assert.strictEqual(S.buildListUrl(S.buildListQuery(['animated', 'rating=e'], null), 1), 'https://rule34hentai.net/post/list/animated+rating%3De/1');
+	assert.strictEqual(S.buildListUrl('Becky_Blackbell animated', 1), 'https://rule34hentai.net/post/list/Becky_Blackbell+animated/1');
 	assert.strictEqual(S.buildListUrl('', 1), 'https://rule34hentai.net/post/list/1');
-	assert.strictEqual(S.buildListUrl('a/b?c#d', 1), 'https://rule34hentai.net/post/list/a%2Fb%3Fc%23d/1');
+	assert.strictEqual(S.buildListUrl('a/b?c#d x+y', 1), 'https://rule34hentai.net/post/list/a%2Fb%3Fc%23d+x%2By/1');
 });
 
 test('popular period math: month/year/day boundaries and 2014 stop', () => {
@@ -165,18 +167,55 @@ const run = (m, text, page) => new Promise((resolve) => { m.lastPageLoaded = pag
 
 test('end to end: list page -> detail pages -> slides, rating filter in URL, blacklist, dedupe of failures', async () => {
 	const { m, ff } = manager({ includeSafe: false, includeQuestionable: false, includeExplicit: true, blacklist: 'bad' }, {
-		'https://rule34hentai.net/post/list/cat%20rating%3Ae/1': ok(listHtml(thumb(1, MD5, 'cat // 800x600 // 1MB // jpg') + thumb(2, MD5B, 'cat bad // 1x1 // 1KB // jpg') + thumb(3, MD5B, 'cat // 1x1 // 1KB // jpg'))),
+		'https://rule34hentai.net/post/list/cat+rating%3De/1': ok(listHtml(thumb(1, MD5, 'cat // 800x600 // 1MB // jpg') + thumb(2, MD5B, 'cat bad // 1x1 // 1KB // jpg') + thumb(3, MD5B, 'cat // 1x1 // 1KB // jpg'))),
 		'https://rule34hentai.net/post/view/1': ok(detailHtml()),
 		'https://rule34hentai.net/post/view/2': ok(detailHtml({ src: `https://rule34hentai.net/_images/${MD5B}/2.jpg` })),
 		// post 3 detail missing -> skipped, not fatal
 	});
 	await run(m, 'cat', 1);
-	assert.strictEqual(m.allUnsortedSlides.length, 1);
+	// no post pages are opened: file addresses are built from the list page, blacklisted post 2 is skipped
+	assert.deepStrictEqual(ff.calls.length, 1);
+	assert.ok(ff.calls[0].endsWith('/cat+rating%3De/1'));
+	deq(m.allUnsortedSlides.map(s => s.id), ['1', '3']);
 	const s = m.allUnsortedSlides[0];
-	assert.strictEqual(s.id, '1'); assert.strictEqual(s.viewableWebsitePostUrl, 'https://rule34hentai.net/post/view/1');
-	assert.strictEqual(s.score, 7);
-	assert.ok(ff.calls[0].endsWith('/cat%20rating%3Ae/1'));
+	assert.strictEqual(s.fileUrl, `https://rule34hentai.net/_images/${MD5}/1%20-%20cat.jpg`);
+	assert.strictEqual(s.viewableWebsitePostUrl, 'https://rule34hentai.net/post/view/1');
 	assert.strictEqual(m.hasExhaustedSearch, false);
+});
+
+test('score sorting needs post pages: details are fetched and failures skipped', async () => {
+	const { m, ff } = manager({}, {
+		'https://rule34hentai.net/post/list/cat+order%3Dscore_desc/1': ok(listHtml(thumb(1, MD5, 'cat // 800x600 // 1MB // jpg') + thumb(3, MD5B, 'cat // 1x1 // 1KB // jpg'))),
+		'https://rule34hentai.net/post/view/1': ok(detailHtml()),
+	});
+	await run(m, 'cat sort:score', 1);
+	assert.strictEqual(ff.calls.length, 3);
+	deq(m.allUnsortedSlides.map(s => [s.id, s.score]), [['1', 7]]);
+});
+
+test('built file addresses match the site pattern (names seen in a real network log)', () => {
+	const e = { id: '715269', md5: MD5, ext: 'png', titleName: '3D Athazel Blender Dog(s) Ellie_Williams The_Last_of_Us The_Last_of_Us_Part_II' };
+	assert.strictEqual(P.buildFileUrl(e), `https://rule34hentai.net/_images/${MD5}/715269%20-%203D%20Athazel%20Blender%20Dog%28s%29%20Ellie_Williams%20The_Last_of_Us%20The_Last_of_Us_Part_II.png`);
+	assert.strictEqual(P.buildFileUrl({ ...e, md5: null }), null);
+	assert.strictEqual(P.buildFileUrl({ ...e, ext: '../x' }), null);
+});
+
+test('popular pages keep the site order unless the search sorts; no post pages needed without rating/score filters', async () => {
+	const now = new Date();
+	const url = S.buildPopularUrl('month', S.popularPeriod('month', 1, now));
+	const pages = { [url]: ok(listHtml(thumb(5, MD5, 'a // 1x1 // 1KB // jpg') + thumb(9, MD5B, 'b // 1x1 // 1KB // jpg') + thumb(7, MD5, 'c // 1x1 // 1KB // jpg'))) };
+	const { m, ff } = manager({}, pages);
+	await run(m, 'popular_by_month', 1);
+	assert.strictEqual(ff.calls.length, 1);
+	const dates = m.allUnsortedSlides.map(s => s.date.getTime());
+	assert.ok(dates[0] > dates[1] && dates[1] > dates[2]); // site order 5, 9, 7 -> newest first
+	const { m: m2 } = manager({}, pages);
+	await run(m2, 'popular_by_month order:id_asc', 1);
+	assert.strictEqual(m2.allUnsortedSlides[0].date.getTime(), 5 * 1000); // own sorting: no rank dates
+	// restricted ratings need the post pages (rating is only there)
+	const { m: m3, ff: ff3 } = manager({ includeSafe: false, includeQuestionable: false }, pages);
+	await run(m3, 'popular_by_month', 1);
+	assert.ok(ff3.calls.length > 1);
 });
 
 test('empty list page exhausts the search; unreadable response is an error', async () => {

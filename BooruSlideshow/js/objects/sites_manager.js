@@ -13,7 +13,8 @@ class SitesManager{
 		this.callbackToRunAfterAllSitesFinishedSearching = null;
 		
 		// Images are cheap to preload ahead of time; videos are not. Only the next few are fetched.
-		this.maxVideoPreloadDistance = 2;
+		this.maxVideoPreloadDistance = 4;
+		this.maxConcurrentPreloads = 3;
 
 		this.sortingTypeDateDesc = 'order:id_desc';
 		this.sortingTypeDateAsc = 'order:id_asc';
@@ -535,66 +536,57 @@ class SitesManager{
 		}
 	}
 
+	// Starts preloading the upcoming slides, a few at a time (slides finish at different speeds, so
+	// downloading one after another left the connection idle).
 	preloadNextUnpreloadedSlideIfInRange()
 	{
 		if (this.currentSlideNumber >= this.getTotalSlideNumber())
 			return;
-		
+
 		var nextSlides = this.getNextSlidesForThumbnails();
 
 		if (nextSlides == null)
 			return;
-		
+
+		var active = 0;
+		var currentSlide = this.allSortedSlides[this.currentSlideNumber - 1];
+
+		if (currentSlide && currentSlide.isPreloading)
+			active++;
+
 		for (var i = 0; i < nextSlides.length; i++)
 		{
-			if (!nextSlides[i])
-				return;
-			
 			var slide = nextSlides[i];
 
-			if (slide.hasFailed || (slide.isVideo() && i >= this.maxVideoPreloadDistance))
+			if (!slide)
+				return;
+
+			if (slide.isPreloading)
+				active++;
+		}
+
+		for (var j = 0; j < nextSlides.length && active < this.maxConcurrentPreloads; j++)
+		{
+			var candidate = nextSlides[j];
+
+			if (!candidate)
+				return;
+
+			if (candidate.hasFailed || candidate.isPreloaded || candidate.isPreloading)
 				continue;
-			
-			if (!slide.isPreloaded)
-			{
-				slide.preload();
-				break;
-			}
+
+			if (candidate.isVideo() && j >= this.maxVideoPreloadDistance)
+				continue;
+
+			candidate.preload();
+			active++;
 		}
 	}
 
 	preloadNextUnpreloadedSlideAfterThisOneIfInRange(startingSlide)
 	{
-		if (this.currentSlideNumber >= this.getTotalSlideNumber())
-			return;
-		
-		var nextSlides = this.getNextSlidesForThumbnails();
-
-		if (nextSlides == null)
-			return;
-		
-		var foundStartingSlide = false;
-		
-		for (var i = 0; i < nextSlides.length; i++)
-		{
-			var slide = nextSlides[i];
-			
-			if (foundStartingSlide)
-			{
-				var tooFarForVideo = slide.isVideo() && i >= this.maxVideoPreloadDistance;
-
-				if (!slide.isPreloaded && !slide.hasFailed && !tooFarForVideo)
-				{
-					slide.preload();
-					break;
-				}
-			}
-			
-			if (startingSlide == slide)
-			{
-				foundStartingSlide = true;
-			}
-		}
+		// A slide just finished, so a slot is free.
+		this.preloadNextUnpreloadedSlideIfInRange();
 	}
 
 	isCurrentSlideLoaded()

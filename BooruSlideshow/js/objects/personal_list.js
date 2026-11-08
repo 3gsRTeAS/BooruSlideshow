@@ -71,26 +71,15 @@ class PersonalList
 
             // Will need to handle items that fail. Perhaps the ID is for a deleted image.
 
-            if (listItem.siteId == SITE_E621){
-                listItem.tags = await _this.getImageTagsE621(listItem.id, webRequester);
-            }else if (listItem.siteId == SITE_RULE34){
+            if (listItem.siteId == SITE_RULE34){
                 listItem.tags = await _this.getImageTagsRule34(listItem.id, webRequester);
             }else if (listItem.siteId == SITE_RULE34HENTAI){
                 listItem.tags = await _this.getImageTagsR34H(listItem.id);
             }else if (listItem.siteId == SITE_ATFBOORU){
                 listItem.tags = await _this.getImageTagsATF(listItem.id, webRequester);
-            }else if (listItem.siteId == SITE_DANBOORU){
-                listItem.tags = await _this.getImageTagsDB(listItem.id, webRequester);
-            }else if (listItem.siteId == SITE_DERPIBOORU){
-                listItem.tags = await _this.getImageTagsDerp(listItem.id, webRequester);
-            }else if (listItem.siteId == SITE_KONACHAN){
-                listItem.tags = await _this.getImageTagsKona(listItem.id, webRequester);
-            }else if (listItem.siteId == SITE_SAFEBOORU){
-                listItem.tags = await _this.getImageTagsSafe(listItem.id, webRequester);
-            }else if (listItem.siteId == SITE_XBOORU){
-                listItem.tags = await _this.getImageTagsXB(listItem.id, webRequester);
-            }else if (listItem.siteId == SITE_YANDERE){
-                listItem.tags = await _this.getImageTagsYand(listItem.id, webRequester);
+            }else if (listItem.tags == null){
+                // Favorites saved from sites that are no longer supported stay in the list, without tags.
+                listItem.tags = '';
             }
 
             if(listItemIndex % 10 == 0){
@@ -103,32 +92,6 @@ class PersonalList
 
             listItemIndex++;
         }, 1000)
-    }
-
-    condenseE621Tags(tags)
-    {
-        var condensedTagArray = [];
-
-		for(var prop in tags)
-		{
-			condensedTagArray = condensedTagArray.concat(tags[prop]);
-		}
-
-		return condensedTagArray.join(" ");
-    }
-
-    getImageTagsE621(id, webRequester)
-    {
-        return new Promise((resolve) => {
-            webRequester.makeWebsiteRequest(`https://e621.net/posts.json?tags=id%3A${id}`, () => {
-                var data = JSON.parse(arguments[1].xhr.responseText).posts[0]
-                if(!data){ 
-                    resolve("")
-                    return
-                }
-                resolve(this.condenseE621Tags(data.tags))
-            })
-        })
     }
 
     // ATFBooru rejects anonymous API requests; credentials are kept in storage.local.
@@ -165,101 +128,7 @@ class PersonalList
         })
     }
 
-    getImageTagsYand(id, webRequester)
-    {
-        return new Promise((resolve) => {
-            webRequester.makeWebsiteRequest(`https://yande.re/post.json?tags=id%3A${id}`, () => {
-                var data = JSON.parse(arguments[1].xhr.responseText)[0]
-                if(!data){ 
-                    resolve("")
-                    return
-                }
-                resolve(data.tags)
-            })
-        })
-    }
     
-
-    getImageTagsKona(id, webRequester)
-    {
-        return new Promise((resolve) => {
-            webRequester.makeWebsiteRequest(`https://konachan.com/post.json?tags=id%3A${id}`, () => {
-                var data = JSON.parse(arguments[1].xhr.responseText)[0]
-                if(!data){ 
-                    resolve("")
-                    return
-                }
-                resolve(data.tags)
-            })
-        })
-    }
-
-    getImageTagsXB(id, webRequester)
-    {
-        return new Promise((resolve) => {
-            webRequester.makeWebsiteRequest(`https://xbooru.com/index.php?page=dapi&s=post&q=index&tags=id%3A${id}`, () => {
-                var parser = new DOMParser()
-                var data = parser.parseFromString(arguments[1].xhr.responseText, "text/xml")
-                if(!data){ 
-                    resolve("")
-                    return
-                }
-                resolve(data.getElementsByTagName("post")[0].getAttribute("tags"))
-            })
-        })
-    }
-
-    getImageTagsSafe(id, webRequester)
-    {
-        return new Promise((resolve) => {
-            webRequester.makeWebsiteRequest(`https://safebooru.org/index.php?page=dapi&s=post&q=index&tags=id%3A${id}`, () => {
-                var parser = new DOMParser()
-                var data = parser.parseFromString(arguments[1].xhr.responseText, "text/xml")
-                if(!data){ 
-                    resolve("")
-                    return
-                }
-                resolve(data.getElementsByTagName("post")[0].getAttribute("tags"))
-            })
-        })
-    }
-
-    async getImageTagsDerp(id, webRequester)
-    {
-        var stored = await DataLoader.storageGet(chrome.storage.local, ['derpibooruApiKey']);
-        var possibleAddedKey = stored.derpibooruApiKey ? '&key=' + encodeURIComponent(stored.derpibooruApiKey) : '';
-
-        return new Promise((resolve) => {
-            webRequester.makeWebsiteRequest(`https://derpibooru.org/search.json?q=id%3A${encodeURIComponent(id)}${possibleAddedKey}`, () => {
-                var data = JSON.parse(arguments[1].xhr.responseText).search[0]
-
-                if(!data){ 
-                    resolve("")
-                    return
-                }
-
-                var tags = data.tags
-				tags = tags.replace(/,\s/gm,",")
-				tags = tags.replace(/\s/gm,"_")
-                tags = tags.replace(/,/gm," ")
-                resolve(tags)
-            })
-        })
-    }
-
-    getImageTagsDB(id, webRequester)
-    {
-        return new Promise((resolve) => {
-            webRequester.makeWebsiteRequest(`https://danbooru.donmai.us/posts.json?tags=id%3A${id}`, () => {
-                var data = JSON.parse(arguments[1].xhr.responseText)[0]
-                if(!data){ 
-                    resolve("")
-                    return
-                }
-                resolve(data.tag_string)
-            })
-        })
-    }
 
     // rule34.xxx's API needs the account's API key and user ID (kept in storage.local).
     // rule34hentai.net has no API; the tags come from the post page (see js/objects/rule34hentai/).

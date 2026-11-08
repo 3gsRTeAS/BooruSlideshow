@@ -49,6 +49,19 @@ class Rule34HentaiParser
 		};
 	}
 
+	// The file's address follows a pattern seen on every file of the site: /_images/<md5>/<id> - <title tags>.<ext>
+	// (matches 8 of 8 file requests in a saved network log). It lets posts be shown without opening each post page.
+	static buildFileUrl(entry)
+	{
+		if (!entry.md5 || !entry.ext || entry.titleName == null || !/^[a-z0-9]{1,6}$/.test(entry.ext))
+			return null;
+
+		const name = entry.id + ' - ' + entry.titleName + '.' + entry.ext;
+		const encoded = encodeURIComponent(name).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+
+		return 'https://rule34hentai.net/_images/' + entry.md5 + '/' + encoded;
+	}
+
 	static isInsideFeaturedBox(element)
 	{
 		for (let node = element; node != null && node.nodeType == 1; node = node.parentElement)
@@ -114,6 +127,7 @@ class Rule34HentaiParser
 				tags: (dataTags != null ? dataTags : (meta ? meta.tags : '')).toLowerCase().substring(0, 4000),
 				width: dw > 0 ? dw : (meta ? meta.width : NaN),
 				height: dh > 0 ? dh : (meta ? meta.height : NaN),
+				titleName: meta ? meta.tags : null,
 				ext: (meta ? meta.ext : '') || Rule34HentaiParser.extFromMime(a.getAttribute('data-mime'))
 			});
 		}

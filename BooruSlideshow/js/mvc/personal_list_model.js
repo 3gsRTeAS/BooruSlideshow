@@ -455,15 +455,6 @@ class PersonalListModel{
         this.blacklistUpdatedEvent.notify();
     }
 	
-    setDerpibooruApiKey(derpibooruApiKey)
-    {
-        this.derpibooruApiKey = derpibooruApiKey;
-
-        this.dataLoader.saveDerpibooruApiKey();
-
-        this.derpibooruApiKeyUpdatedEvent.notify();
-    }
-
     setPersonalList(personalList)
     {
         this.personalList = personalList;

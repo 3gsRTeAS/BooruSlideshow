@@ -8,7 +8,7 @@ class Rule34HentaiMedia
 {
 	static get MAX_FILE_BYTES() { return 100 * 1024 * 1024; }
 	static get MAX_CACHE_BYTES() { return 300 * 1024 * 1024; }
-	static get MAX_CONCURRENT() { return 4; }
+	static get MAX_CONCURRENT() { return 6; }
 
 	static isManaged(url)
 	{

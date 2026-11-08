@@ -269,15 +269,6 @@ class SiteManager
 			return;
 		}
 		
-		if (this.id == SITE_DERPIBOORU)
-		{
-			jsonPosts = jsonPosts["images"];
-		}
-		else if (this.id == SITE_E621)
-		{
-			jsonPosts = jsonPosts["posts"]
-		}
-		
 		this.hasExhaustedSearch = (jsonPosts.length < this.pageLimit);
 
 		for (var i = 0; i < jsonPosts.length; i++)

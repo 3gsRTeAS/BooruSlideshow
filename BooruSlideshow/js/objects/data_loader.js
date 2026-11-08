@@ -34,9 +34,6 @@ class DataLoader
         var includeSafe = obj['includeSafe'];
         var hideBlacklist = obj['hideBlacklist'];
         var blacklist = obj['blacklist'];
-        var derpibooruApiKey = obj['derpibooruApiKey'];
-        var e621Login = obj['e621Login'];
-        var e621ApiKey = obj['e621ApiKey'];
         var gelbUserId = obj['gelbUserId'];
         var gelbApiKey = obj['gelbApiKey'];
         var atfUsername = obj['atfUsername'];
@@ -102,16 +99,9 @@ class DataLoader
                 let cleanSitesToSearch = Object.assign({}, _this.sitesToSearch);
 
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_ATFBOORU);
-                _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_DANBOORU);
-                _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_DERPIBOORU);
-                _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_E621);
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_GELBOORU);
-                _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_KONACHAN);
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_RULE34);
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_RULE34HENTAI);
-                _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_SAFEBOORU);
-                _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_XBOORU);
-                _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_YANDERE);
 
                 _this._model.setSitesToSearch(cleanSitesToSearch);
             }
@@ -169,21 +159,6 @@ class DataLoader
                 _this._model.setBlacklist(blacklist);
             }
             
-            if (derpibooruApiKey != null && _this._model.derpibooruApiKey != derpibooruApiKey)
-            {
-                _this._model.setDerpibooruApiKey(derpibooruApiKey);
-            }
-
-            if (e621Login != null && _this._model.e621Login != e621Login)
-            {
-                _this._model.setE621Login(e621Login);
-            }
-
-            if (e621ApiKey != null && _this._model.e621ApiKey != e621ApiKey)
-            {
-                _this._model.setE621ApiKey(e621ApiKey);
-            }
-
             if (gelbUserId != null && _this._model.gelbUserId != gelbUserId)
             {
                 _this._model.setGelbUserId(gelbUserId);
@@ -303,6 +278,10 @@ class DataLoader
             chrome.storage.sync.remove(credentialKeysInSync);
         }
 
+        // Settings of removed sites (API keys) are deleted rather than left behind.
+        chrome.storage.local.remove(OBSOLETE_STORAGE_KEYS);
+        chrome.storage.sync.remove(OBSOLETE_STORAGE_KEYS);
+
         console.log("Finished obtaining slideshow settings from browser data.");
 
         return result;
@@ -408,21 +387,6 @@ class DataLoader
         chrome.storage.sync.set({'blacklist': this._model.blacklist});
     }
 	
-    saveDerpibooruApiKey()
-    {
-        chrome.storage.local.set({'derpibooruApiKey': this._model.derpibooruApiKey});
-    }
-
-    saveE621Login()
-    {
-        chrome.storage.local.set({'e621Login': this._model.e621Login});
-    }
-
-    saveE621ApiKey()
-    {
-        chrome.storage.local.set({'e621ApiKey': this._model.e621ApiKey});
-    }
-
     saveGelbUserId()
     {
         chrome.storage.local.set({'gelbUserId': this._model.gelbUserId});

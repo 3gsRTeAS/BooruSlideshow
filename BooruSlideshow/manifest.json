@@ -29,17 +29,9 @@
 	],
 	"host_permissions": [
 		"https://booru.allthefallen.moe/*",
-		"https://danbooru.donmai.us/*",
-		"https://cdn.donmai.us/*",
-		"https://derpibooru.org/*",
-		"https://e621.net/*",
 		"https://*.gelbooru.com/*",
-		"https://konachan.com/*",
 		"https://api.rule34.xxx/*",
-		"https://rule34hentai.net/*",
-		"https://safebooru.org/*",
-		"https://xbooru.com/*",
-		"https://yande.re/*"
+		"https://rule34hentai.net/*"
 	],
 	"content_scripts": [
 		{
@@ -62,6 +54,6 @@
 		]
 	},
 	"content_security_policy": {
-		"extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; img-src 'self' https: blob:; media-src 'self' https: blob:; connect-src 'self' https://booru.allthefallen.moe https://danbooru.donmai.us https://derpibooru.org https://e621.net https://gelbooru.com https://*.gelbooru.com https://konachan.com https://api.rule34.xxx https://rule34hentai.net https://safebooru.org https://xbooru.com https://yande.re"
+		"extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; img-src 'self' https: blob:; media-src 'self' https: blob:; connect-src 'self' https://booru.allthefallen.moe https://gelbooru.com https://*.gelbooru.com https://api.rule34.xxx https://rule34hentai.net"
 	}
 }

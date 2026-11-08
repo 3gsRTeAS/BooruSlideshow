@@ -96,7 +96,7 @@ class Rule34HentaiSearch
 
 			if (m)
 			{
-				out.push('rating:' + m[1].toLowerCase());
+				out.push('rating=' + m[1].toLowerCase());
 				hasRatingTerm = true;
 				continue;
 			}
@@ -105,7 +105,7 @@ class Rule34HentaiSearch
 
 			if (m)
 			{
-				out.push('order:' + Rule34HentaiSearch.mapOrder(m[1].toLowerCase()));
+				out.push('order=' + Rule34HentaiSearch.mapOrder(m[1].toLowerCase()));
 				continue;
 			}
 
@@ -113,7 +113,7 @@ class Rule34HentaiSearch
 		}
 
 		if (!hasRatingTerm && allowedRatings && allowedRatings.length > 0 && allowedRatings.length < 3)
-			out.push('rating:' + allowedRatings.join(''));
+			out.push('rating=' + allowedRatings.join(''));
 
 		return out.join(' ');
 	}
@@ -122,7 +122,10 @@ class Rule34HentaiSearch
 	{
 		const base = Rule34HentaiSearch.ORIGIN + '/post/list/';
 
-		return query == '' ? base + page : base + encodeURIComponent(query) + '/' + page;
+		// The site separates tags in the address with "+" (its own links look like animated+rating%3De).
+		const terms = query.split(/\s+/).filter(Boolean).map(encodeURIComponent).join('+');
+
+		return terms == '' ? base + page : base + terms + '/' + page;
 	}
 
 	// ---- popular pages ----
@@ -244,6 +247,9 @@ class Rule34HentaiSearch
 
 		return {
 			unsupported: unsupported,
+
+			// True when rating or score (only on the post page) must be known to apply the filter.
+			needsDetail: ratings != null || compareDetail.length > 0,
 
 			// Uses only what the list page shows: tags, extension, width, height.
 			matchesListEntry: function (post) {

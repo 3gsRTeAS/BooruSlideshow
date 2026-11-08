@@ -10,16 +10,9 @@ class SlideshowModel{
         
         this.sitesToSearch = {
             [SITE_ATFBOORU]: false,
-            [SITE_DANBOORU]: false,
-            [SITE_DERPIBOORU]: false,
-            [SITE_E621]: false,
             [SITE_GELBOORU]: false,
-            [SITE_KONACHAN]: false,
             [SITE_RULE34]: false,
-            [SITE_RULE34HENTAI]: false,
-            [SITE_SAFEBOORU]: true,
-            [SITE_XBOORU]: false,
-            [SITE_YANDERE]: false
+            [SITE_RULE34HENTAI]: true
         };
 
         this.secondsPerSlide = 6;
@@ -34,9 +27,6 @@ class SlideshowModel{
         this.includeSafe = true;
         this.hideBlacklist = false;
         this.blacklist = '';
-        this.derpibooruApiKey = '';
-        this.e621Login = ''
-        this.e621ApiKey = ''
         this.gelbUserId = ''
         this.gelbApiKey = ''
         this.atfUsername = '';
@@ -70,9 +60,6 @@ class SlideshowModel{
         this.includeSafeUpdatedEvent = new Event(this);
         this.hideBlacklistUpdatedEvent = new Event(this);
         this.blacklistUpdatedEvent = new Event(this);
-        this.derpibooruApiKeyUpdatedEvent = new Event(this);
-        this.e621LoginUpdatedEvent = new Event(this);
-        this.e621ApiKeyUpdatedEvent = new Event(this);
         this.gelbUserIdUpdatedEvent = new Event(this);
         this.gelbApiKeyUpdatedEvent = new Event(this);
         this.atfUsernameUpdatedEvent = new Event(this);
@@ -99,16 +86,9 @@ class SlideshowModel{
 		var standardPageLimit = 100;
 		
         this.sitesManager.addSite(SITE_ATFBOORU, standardPageLimit);
-        this.sitesManager.addSite(SITE_DANBOORU, standardPageLimit);
-        this.sitesManager.addSite(SITE_DERPIBOORU, 50);
-        this.sitesManager.addSite(SITE_E621, standardPageLimit);
         this.sitesManager.addSite(SITE_GELBOORU, standardPageLimit);
-        this.sitesManager.addSite(SITE_KONACHAN, standardPageLimit);
         this.sitesManager.addSite(SITE_RULE34, standardPageLimit);
         this.sitesManager.addSite(SITE_RULE34HENTAI, standardPageLimit);
-        this.sitesManager.addSite(SITE_SAFEBOORU, standardPageLimit);
-        this.sitesManager.addSite(SITE_XBOORU, standardPageLimit);
-        this.sitesManager.addSite(SITE_YANDERE, standardPageLimit);
     }
 
     async loadUserSettings()
@@ -599,33 +579,6 @@ class SlideshowModel{
         this.blacklistUpdatedEvent.notify();
     }
 	
-    setDerpibooruApiKey(derpibooruApiKey)
-    {
-        this.derpibooruApiKey = derpibooruApiKey;
-
-        this.dataLoader.saveDerpibooruApiKey();
-
-        this.derpibooruApiKeyUpdatedEvent.notify();
-    }
-
-    setE621Login(e621Login)
-    {
-        this.e621Login = e621Login;
-
-        this.dataLoader.saveE621Login();
-
-        this.e621LoginUpdatedEvent.notify();
-    }
-
-    setE621ApiKey(e621ApiKey)
-    {
-        this.e621ApiKey = e621ApiKey;
-
-        this.dataLoader.saveE621ApiKey();
-
-        this.e621ApiKeyUpdatedEvent.notify();
-    }
-
     setGelbUserId(gelbUserId)
     {
         this.gelbUserId = gelbUserId;

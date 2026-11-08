@@ -33,9 +33,6 @@ class SlideshowView
         this.includeDupesChangedEvent = new Event(this);
         this.hideBlacklistChangedEvent = new Event(this);
         this.blacklistChangedEvent = new Event(this);
-        this.derpibooruApiKeyChangedEvent = new Event(this);
-        this.e621LoginChangedEvent = new Event(this);
-        this.e621ApiKeyChangedEvent = new Event(this);
         this.gelbUserIdChangedEvent = new Event(this);
         this.gelbApiKeyChangedEvent = new Event(this);
         this.atfUsernameChangedEvent = new Event(this);
@@ -135,18 +132,6 @@ class SlideshowView
             _this.updateBlacklist();
         });
         
-        this._model.derpibooruApiKeyUpdatedEvent.attach(function () {
-            _this.updateDerpibooruApiKey();
-        });
-
-        this._model.e621LoginUpdatedEvent.attach(function () {
-            _this.updateE621Login();
-        });
-
-        this._model.e621ApiKeyUpdatedEvent.attach(function () {
-            _this.updateE621ApiKey();
-        });
-
         this._model.gelbUserIdUpdatedEvent.attach(function () {
             _this.updateGelbUserId();
         });
@@ -271,9 +256,6 @@ class SlideshowView
                 document.activeElement !== _this.uiElements.maxWidthTextBox &&
                 document.activeElement !== _this.uiElements.maxHeightTextBox &&
                 document.activeElement !== _this.uiElements.blacklist &&
-                document.activeElement !== _this.uiElements.derpibooruApiKey &&
-                document.activeElement !== _this.uiElements.e621Login &&
-                document.activeElement !== _this.uiElements.e621ApiKey &&
                 document.activeElement !== _this.uiElements.gelbUserId &&
                 document.activeElement !== _this.uiElements.gelbApiKey &&
                 document.activeElement !== _this.uiElements.atfUsername &&
@@ -404,18 +386,6 @@ class SlideshowView
             _this.hideBlacklistChangedEvent.notify();
         });
         
-        this.uiElements.derpibooruApiKey.addEventListener('change', function () {
-            _this.derpibooruApiKeyChangedEvent.notify();
-        });
-
-        this.uiElements.e621Login.addEventListener('change', function () {
-            _this.e621LoginChangedEvent.notify();
-        });
-
-        this.uiElements.e621ApiKey.addEventListener('change', function () {
-            _this.e621ApiKeyChangedEvent.notify();
-        });
-
         this.uiElements.gelbUserId.addEventListener('change', function () {
             _this.gelbUserIdChangedEvent.notify();
         });
@@ -961,17 +931,7 @@ class SlideshowView
 
             siteToSearch.checked = checked;
 			
-			if (site == SITE_DERPIBOORU)
-			{
-				this.uiElements.derpibooruApiKeyContainer.style.display = checked ? 'inline' : 'none';
-            }
             
-            if (site == SITE_E621)
-			{
-                this.uiElements.e621LoginContainer.style.display = checked ? 'inline' : 'none';
-				this.uiElements.e621ApiKeyContainer.style.display = checked ? 'inline' : 'none';
-			}
-
             if (site == SITE_ATFBOORU)
             {
                 this.uiElements.atfUsernameContainer.style.display = checked ? 'inline' : 'none';
@@ -1166,30 +1126,6 @@ class SlideshowView
 		console.log(pattern.test(blacklist));
     }*/
 	
-	getDerpibooruApiKey() {
-        return this.uiElements.derpibooruApiKey.value.trim();
-    }
-
-    updateDerpibooruApiKey() {
-        this.uiElements.derpibooruApiKey.value = this._model.derpibooruApiKey;
-    }
-
-    getE621Login() {
-        return this.uiElements.e621Login.value.trim();
-    }
-
-    updateE621Login() {
-        this.uiElements.e621Login.value = this._model.e621Login;
-    }
-
-    getE621ApiKey() {
-        return this.uiElements.e621ApiKey.value.trim();
-    }
-
-    updateE621ApiKey() {
-        this.uiElements.e621ApiKey.value = this._model.e621ApiKey;
-    }
-
     getGelbUserId() {
         return this.uiElements.gelbUserId.value.trim();
     }

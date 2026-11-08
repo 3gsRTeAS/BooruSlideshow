@@ -91,15 +91,6 @@ test('every site manager routes slides through pushSlideIfSafe', () => {
 		assert.ok(!/allUnsortedSlides\.push\(/.test(fs.readFileSync(path.join(dir, f), 'utf8')), f);
 });
 
-test('safebooru uses the real preview URL for thumbnails', () => {
-	const sm = fakeSitesManager();
-	const m = new app.SiteManagerSafebooru(sm, 100);
-	const xml = '<posts><post id="1" file_url="//safebooru.org/images/1/a.jpg" preview_url="//safebooru.org/thumbnails/1/thumbnail_a.jpg" tags="x" width="1" height="1" created_at="Sun Dec 21 12:00:00 +0000 2025" score="0" md5="m" /></posts>';
-	m.addSlides(xml);
-	assert.strictEqual(m.allUnsortedSlides[0].previewFileUrl, 'https://safebooru.org/thumbnails/1/thumbnail_a.jpg');
-	assert.strictEqual(m.allUnsortedSlides[0].fileUrl, 'https://safebooru.org/images/1/a.jpg');
-});
-
 test('gelbooru keeps its URL format (regression)', () => {
 	const sm = fakeSitesManager({ gelbUserId: '7', gelbApiKey: 'K' });
 	const m = new app.SiteManagerGelbooru(sm, 100);
@@ -130,9 +121,9 @@ test('model reports selected sites that lack credentials', () => {
 	const model = Object.create(app.SlideshowModel.prototype);
 	const sm = fakeSitesManager({ rule34UserId: '', rule34ApiKey: '' });
 	const r34 = app.SiteManagerFactory.createSiteManager(sm, app.SITE_RULE34, 100);
-	const safe = new app.SiteManagerSafebooru(sm, 100);
-	model.sitesManager = { siteManagers: [r34, safe] };
-	model.sitesToSearch = { [app.SITE_RULE34]: true, [app.SITE_SAFEBOORU]: true };
+	const r34h = app.SiteManagerFactory.createSiteManager(sm, app.SITE_RULE34HENTAI, 100);
+	model.sitesManager = { siteManagers: [r34, r34h] };
+	model.sitesToSearch = { [app.SITE_RULE34]: true, [app.SITE_RULE34HENTAI]: true };
 	assert.deepStrictEqual(model.getSelectedSitesMissingCredentials().map(s => s.id), [app.SITE_RULE34]);
 	model.sitesToSearch[app.SITE_RULE34] = false;
 	assert.deepStrictEqual(model.getSelectedSitesMissingCredentials(), []);
@@ -178,7 +169,19 @@ test('only the next few videos are preloaded, images keep the full window', () =
 	sm.allSortedSlides = slides;
 	sm.currentSlideNumber = 1; // next slides are indexes 1..5
 	for (let n = 0; n < 6; n++) sm.preloadNextUnpreloadedSlideIfInRange();
-	assert.deepStrictEqual(preloaded, [1, 2]);
+	assert.deepStrictEqual(preloaded, [1, 2, 3, 4]);
+});
+
+test('several slides preload at once, but never more than the limit', () => {
+	const sm = new app.SitesManager({ view: null }, 20, 10);
+	const slides = [];
+	for (let i = 0; i < 8; i++) { const s = new app.Slide('SAFE', i, 'https://x/' + i, '', 'https://x', 1, 1, new Date(), 0, app.MEDIA_TYPE_IMAGE, 'm' + i, 't'); s.preload = function () { this.isPreloading = true; }; slides.push(s); }
+	sm.allSortedSlides = slides; sm.currentSlideNumber = 1;
+	sm.preloadNextUnpreloadedSlideIfInRange();
+	assert.strictEqual(slides.filter(s => s.isPreloading).length, sm.maxConcurrentPreloads);
+	slides[1].isPreloading = false; slides[1].isPreloaded = true; // one finished
+	sm.preloadNextUnpreloadedSlideIfInRange();
+	assert.strictEqual(slides.filter(s => s.isPreloading).length, sm.maxConcurrentPreloads);
 });
 
 // ---------- storage ----------
@@ -206,13 +209,22 @@ test('credentials migrate from synced to local storage and are removed from sync
 });
 
 test('local credentials win over stale synced ones', async () => {
-	const sync = { e621ApiKey: 'old' };
-	const local = { e621ApiKey: 'new' };
+	const sync = { gelbApiKey: 'old' };
+	const local = { gelbApiKey: 'new' };
 	const a = loadApp({ chrome: fakeChrome({ sync, local }) });
 	const result = await new a.DataLoader({}).getUserSettingsFromBrowser();
-	assert.strictEqual(result.e621ApiKey, 'new');
-	assert.strictEqual(local.e621ApiKey, 'new');
-	assert.ok(!('e621ApiKey' in sync));
+	assert.strictEqual(result.gelbApiKey, 'new');
+	assert.strictEqual(local.gelbApiKey, 'new');
+	assert.ok(!('gelbApiKey' in sync));
+});
+
+test('API keys of removed sites are deleted from storage', async () => {
+	const sync = { e621ApiKey: 'x', secondsPerSlide: 5 };
+	const local = { derpibooruApiKey: 'y', e621Login: 'me', gelbApiKey: 'g' };
+	const a = loadApp({ chrome: fakeChrome({ sync, local }) });
+	await new a.DataLoader({}).getUserSettingsFromBrowser();
+	assert.deepStrictEqual({ ...sync }, { secondsPerSlide: 5 });
+	assert.deepStrictEqual({ ...local }, { gelbApiKey: 'g' });
 });
 
 test('favorites saved to local storage are the ones loaded', async () => {
@@ -225,10 +237,9 @@ test('favorites saved to local storage are the ones loaded', async () => {
 test('credentials are saved to local, never to sync', () => {
 	const sync = {}, local = {};
 	const a = loadApp({ chrome: fakeChrome({ sync, local }) });
-	const model = { rule34ApiKey: 'K', rule34UserId: '1', gelbApiKey: 'G', gelbUserId: '2', e621ApiKey: 'E', e621Login: 'me', derpibooruApiKey: 'D', atfUsername: 'u', atfApiKey: 'A' };
+	const model = { rule34ApiKey: 'K', rule34UserId: '1', gelbApiKey: 'G', gelbUserId: '2', atfUsername: 'u', atfApiKey: 'A' };
 	const loader = new a.DataLoader(model);
 	loader.saveRule34ApiKey(); loader.saveRule34UserId(); loader.saveGelbApiKey(); loader.saveGelbUserId();
-	loader.saveE621ApiKey(); loader.saveE621Login(); loader.saveDerpibooruApiKey();
 	loader.saveAtfUsername(); loader.saveAtfApiKey();
 	assert.deepStrictEqual(Object.keys(sync), []);
 	assert.deepStrictEqual(Object.keys(local).sort(), [...a.CREDENTIAL_STORAGE_KEYS].sort());
@@ -246,8 +257,11 @@ test('manifest: Firefox MV3, minimal permissions, CSP', () => {
 	assert.match(csp, /script-src 'self'/);
 	assert.ok(!/unsafe-/.test(csp));
 	// every host the XHR layer talks to must be allowed by connect-src
-	for (const host of ['danbooru.donmai.us', 'derpibooru.org', 'e621.net', 'gelbooru.com', 'konachan.com', 'api.rule34.xxx', 'safebooru.org', 'xbooru.com', 'yande.re'])
+	for (const host of ['booru.allthefallen.moe', 'gelbooru.com', 'api.rule34.xxx', 'rule34hentai.net'])
 		assert.ok(csp.includes('https://' + host), host);
+	// removed sites must not be allowed any more
+	for (const host of ['danbooru.donmai.us', 'derpibooru.org', 'e621.net', 'konachan.com', 'safebooru.org', 'xbooru.com', 'yande.re'])
+		assert.ok(!csp.includes(host) && !JSON.stringify(m.host_permissions).includes(host), host);
 });
 
 test('every script referenced by the HTML pages exists', () => {

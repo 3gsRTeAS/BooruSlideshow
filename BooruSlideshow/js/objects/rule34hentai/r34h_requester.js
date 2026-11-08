@@ -71,6 +71,14 @@ class Rule34HentaiRequester
 				const i = next++;
 				const e = entries[i];
 
+				const direct = plan.needDetail ? null : Rule34HentaiParser.buildFileUrl(e);
+
+				if (direct != null)
+				{
+					posts[i] = { id: e.id, md5: e.md5, fileUrl: direct, previewUrl: e.thumbUrl, tags: e.tags, rating: 'u', score: 0, width: e.width, height: e.height, ext: e.ext, dateMs: 0 };
+					continue;
+				}
+
 				try
 				{
 					const d = await this.fetcher.fetchPage('https://rule34hentai.net/post/view/' + e.id);

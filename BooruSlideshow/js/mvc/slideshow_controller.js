@@ -128,18 +128,6 @@ class SlideshowController
             _this.blacklistChanged();
         });
         
-        this._view.derpibooruApiKeyChangedEvent.attach(function () {
-            _this.derpibooruApiKeyChanged();
-        });
-
-        this._view.e621LoginChangedEvent.attach(function () {
-            _this.e621LoginChanged();
-        });
-
-        this._view.e621ApiKeyChangedEvent.attach(function () {
-            _this.e621ApiKeyChanged();
-        });
-
         this._view.gelbUserIdChangedEvent.attach(function () {
             _this.gelbUserIdChanged();
         });
@@ -453,27 +441,6 @@ class SlideshowController
         this._model.setBlacklist(blacklist);
     }
 	
-    derpibooruApiKeyChanged()
-    {
-        var derpibooruApiKey = this._view.getDerpibooruApiKey();
-
-        this._model.setDerpibooruApiKey(derpibooruApiKey);
-    }
-
-    e621LoginChanged()
-    {
-        var e621Login = this._view.getE621Login();
-
-        this._model.setE621Login(e621Login);
-    }
-
-    e621ApiKeyChanged()
-    {
-        var e621ApiKey = this._view.getE621ApiKey();
-
-        this._model.setE621ApiKey(e621ApiKey);
-    }
-
     gelbUserIdChanged()
     {
         var gelbUserId = this._view.getGelbUserId();

@@ -32,6 +32,34 @@ class Rule34HentaiFetcher
 		return { status: response.status, url: response.url, text: text.substring(0, 4 * 1024 * 1024) };
 	}
 
+	ask(tabId, url)
+	{
+		return new Promise((resolve) => {
+			try { this.chrome.tabs.sendMessage(tabId, { type: 'bs-r34h-fetch', url: url }, (r) => resolve(this.chrome.runtime.lastError ? null : r)); }
+			catch (e) { resolve(null); }
+		});
+	}
+
+	// Tabs opened before the extension was allowed on the site don't have the helper script yet.
+	// Inject it on demand (needs the "scripting" permission plus the site permission).
+	async inject(tabId)
+	{
+		try
+		{
+			if (!this.chrome.scripting || !this.chrome.scripting.executeScript)
+				return false;
+
+			await this.chrome.scripting.executeScript({ target: { tabId: tabId }, files: ['js/content/rule34hentai_relay.js'] });
+
+			return true;
+		}
+		catch (e)
+		{
+			return false;
+		}
+	}
+
+	// Returns { answer, tabCount }. answer is null if no tab could fetch the page.
 	async relay(url)
 	{
 		const tabs = await new Promise((resolve) => {
@@ -41,16 +69,16 @@ class Rule34HentaiFetcher
 
 		for (const tab of tabs)
 		{
-			const answer = await new Promise((resolve) => {
-				try { this.chrome.tabs.sendMessage(tab.id, { type: 'bs-r34h-fetch', url: url }, (r) => resolve(this.chrome.runtime.lastError ? null : r)); }
-				catch (e) { resolve(null); }
-			});
+			let answer = await this.ask(tab.id, url);
+
+			if (answer == null && await this.inject(tab.id))
+				answer = await this.ask(tab.id, url);
 
 			if (answer && typeof answer.text === 'string' && typeof answer.status === 'number')
-				return answer;
+				return { answer: answer, tabCount: tabs.length };
 		}
 
-		return null;
+		return { answer: null, tabCount: tabs.length };
 	}
 
 	// Resolves { status, url, text }, or rejects with Error whose message is user-facing.
@@ -68,7 +96,8 @@ class Rule34HentaiFetcher
 			catch (e) { /* fall through to the tab */ }
 		}
 
-		const viaTab = await this.relay(url);
+		const relayed = await this.relay(url);
+		const viaTab = relayed.answer;
 
 		if (viaTab && !Rule34HentaiFetcher.looksLikeChallenge(viaTab.status, viaTab.text))
 		{
@@ -80,6 +109,12 @@ class Rule34HentaiFetcher
 
 		if (viaTab && viaTab.status === 404)
 			return viaTab;
+
+		if (relayed.tabCount === 0)
+			throw new Error('No open rule34hentai.net tab was found. ' + Rule34HentaiFetcher.HELP);
+
+		if (viaTab == null)
+			throw new Error('A rule34hentai.net tab is open but could not be read. Reload that tab (F5) and make sure the extension is allowed on the site. ' + Rule34HentaiFetcher.HELP);
 
 		throw new Error(Rule34HentaiFetcher.HELP);
 	}

@@ -24,7 +24,8 @@
 		"unlimitedStorage",
 		"storage",
 		"declarativeNetRequestWithHostAccess",
-		"downloads"
+		"downloads",
+		"scripting"
 	],
 	"host_permissions": [
 		"https://booru.allthefallen.moe/*",
@@ -42,8 +43,12 @@
 	],
 	"content_scripts": [
 		{
-			"matches": ["https://rule34hentai.net/*"],
-			"js": ["js/content/rule34hentai_relay.js"],
+			"matches": [
+				"https://rule34hentai.net/*"
+			],
+			"js": [
+				"js/content/rule34hentai_relay.js"
+			],
 			"run_at": "document_idle"
 		}
 	],

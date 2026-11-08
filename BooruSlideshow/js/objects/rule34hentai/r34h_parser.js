@@ -60,18 +60,32 @@ class Rule34HentaiParser
 		return false;
 	}
 
+	static extFromMime(mime)
+	{
+		const m = /^(?:image|video)\/([a-z0-9.+-]+)$/i.exec(String(mime || ''));
+
+		if (m == null)
+			return '';
+
+		const sub = m[1].toLowerCase();
+
+		return { jpeg: 'jpg', 'svg+xml': 'svg', quicktime: 'mov', 'x-matroska': 'mkv' }[sub] || sub;
+	}
+
 	// Returns { posts: [{id, md5, thumbUrl, tags, width, height, ext}], sawLinks }.
+	// Live markup (checked against saved pages): <a class="thumb shm-thumb" href=".../post/view/ID[#search=..]"
+	// data-tags data-width data-height data-mime data-post-id><img title="... // WxH // size // ext"></a>.
 	static parseList(html)
 	{
 		const doc = Rule34HentaiParser.parseHtml(html);
-		const grid = doc.querySelector('#image-list, .shm-image-list');
+		const grid = doc.querySelector('#image-list .shm-image-list, .shm-image-list, #image-list');
 		const scope = grid || doc;
 		const seen = new Set();
 		const posts = [];
 
 		for (const a of scope.querySelectorAll('a[href]'))
 		{
-			const m = /(?:^|\/)post\/view\/(\d{1,12})\/?$/.exec(a.getAttribute('href') || '');
+			const m = /(?:^|\/)post\/view\/(\d{1,12})\/?(?:[?#].*)?$/.exec(a.getAttribute('href') || '');
 
 			if (m == null)
 				continue;
@@ -90,15 +104,17 @@ class Rule34HentaiParser
 			const md5Match = /\/_thumbs\/([0-9a-f]{32})\//i.exec(thumbUrl || '');
 			const meta = Rule34HentaiParser.parseTitle(a.getAttribute('title') || img.getAttribute('title') || img.getAttribute('alt') || '');
 			const dataTags = a.getAttribute('data-tags');
+			const dw = Number(a.getAttribute('data-width'));
+			const dh = Number(a.getAttribute('data-height'));
 
 			posts.push({
 				id: m[1],
 				md5: md5Match ? md5Match[1].toLowerCase() : null,
 				thumbUrl: thumbUrl,
-				tags: dataTags != null ? dataTags.substring(0, 4000) : (meta ? meta.tags : ''),
-				width: meta ? meta.width : NaN,
-				height: meta ? meta.height : NaN,
-				ext: meta ? meta.ext : ''
+				tags: (dataTags != null ? dataTags : (meta ? meta.tags : '')).toLowerCase().substring(0, 4000),
+				width: dw > 0 ? dw : (meta ? meta.width : NaN),
+				height: dh > 0 ? dh : (meta ? meta.height : NaN),
+				ext: (meta ? meta.ext : '') || Rule34HentaiParser.extFromMime(a.getAttribute('data-mime'))
 			});
 		}
 
@@ -156,8 +172,24 @@ class Rule34HentaiParser
 			rating = Rule34HentaiParser.ratingLetter(ratingEl.getAttribute('data-rating'));
 		else
 		{
-			const rm = /Rating:\s*(Safe|Questionable|Explicit|Unrated)/i.exec(text);
-			rating = rm ? Rule34HentaiParser.ratingLetter(rm[1]) : 'u';
+			// Live markup: <tr><th>Rating</th><td><span class="view">Unrated</span> <span class="edit"><select>...
+			rating = 'u';
+
+			for (const th of doc.querySelectorAll('th'))
+			{
+				if (th.textContent.trim().toLowerCase() === 'rating')
+				{
+					const view = th.parentElement.querySelector('.view');
+					rating = Rule34HentaiParser.ratingLetter(view ? view.textContent : '');
+					break;
+				}
+			}
+
+			if (rating == 'u')
+			{
+				const rm = /Rating:\s*(Safe|Questionable|Explicit)/i.exec(text);
+				rating = rm ? Rule34HentaiParser.ratingLetter(rm[1]) : 'u';
+			}
 		}
 
 		const scoreMatch = /(?:Current\s+)?Score:\s*(-?\d+)/i.exec(text);
@@ -166,7 +198,7 @@ class Rule34HentaiParser
 		const timeEl = doc.querySelector('time[datetime]');
 		const date = timeEl ? new Date(timeEl.getAttribute('datetime')) : null;
 		const tagEls = doc.querySelectorAll('.tag_name');
-		let tags = Array.from(tagEls).map(el => el.textContent.trim().replace(/\s+/g, '_')).filter(Boolean).join(' ');
+		let tags = Array.from(tagEls).map(el => el.textContent.trim().replace(/\s+/g, '_').toLowerCase()).filter(Boolean).join(' ');
 
 		if (tags == '' && main != null)
 			tags = main.getAttribute('data-tags') || '';

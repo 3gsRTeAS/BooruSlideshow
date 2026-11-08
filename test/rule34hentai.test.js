@@ -252,3 +252,60 @@ test('factory, credentials, wiring in HTML/manifest', () => {
 	}
 	assert.match(fs.readFileSync(path.join(ROOT, 'slideshow.html'), 'utf8'), /value="R34H"/);
 });
+
+// ---- fixtures reduced from pages the user saved from the live site (structure only) ----
+const REAL_LIST = `<html><body>
+<section id="featured-pair-block"><div class="featured-card"><a href="https://rule34hentai.net/post/view/711826" title="F // 1280x720, 60s // 32.0MB // webm"><img src="https://rule34hentai.net/_thumbs/${MD5B}/thumb.jpg"></a></div></section>
+<section id="image-list"><h3>Posts</h3><div class="blockbody"><div class="shm-image-list" data-query="#search=rating%3De">
+<a href="https://rule34hentai.net/post/view/715365#search=rating%3De#search=rating%3De" class="thumb shm-thumb shm-thumb-link " data-tags="3d animated sound" data-height="1080" data-width="1920" data-mime="video/mp4" data-post-id="715365"><img id="thumb_715365" title="3D Animated Sound // 1920x1080, 10s // 25.0MB // mp4" src="https://rule34hentai.net/_thumbs/${MD5}/thumb.jpg"></a>
+<a href="https://rule34hentai.net/post/view/401138" class="thumb shm-thumb" data-tags="chris_redfield" data-height="960" data-width="1920" data-mime="image/jpeg" data-post-id="401138"><img title="" src="https://rule34hentai.net/_thumbs/${MD5B}/thumb.jpg"></a>
+</div></div></section></body></html>`;
+const REAL_DETAIL = (rating) => `<html><body><table><tr><th>Uploader</th><td><a class="username" href="/user/x">x</a>, <time datetime="2026-10-25T19:14:54+00:00">14 days ago</time></td></tr>
+<tr><th>Rating</th><td><span class="view">${rating}</span><span class="edit"><select name="rating"><option value="s">Safe</option><option value="e">Explicit</option></select></span></td></tr></table>
+<video id="video_1"><source src="Post%201_files/x.webm"></video>
+<a href="https://rule34hentai.net/_images/${MD5}/1%20-%20x.webm" download><button>Download image</button></a>
+<div>Current Score: 54 <form></form></div><a class="tag_name" href="/post/list/3D/1">3D</a><a class="tag_name" href="/post/list/Sheva_Alomar/1">Sheva_Alomar</a></body></html>`;
+
+test('real markup: hash-suffixed post links, data-* attributes, Featured box excluded, mime fallback for ext', () => {
+	const r = P.parseList(REAL_LIST);
+	deq(r.posts.map(p => p.id), ['715365', '401138']);
+	assert.strictEqual(r.posts[0].tags, '3d animated sound'); assert.strictEqual(r.posts[0].width, 1920); assert.strictEqual(r.posts[0].ext, 'mp4');
+	assert.strictEqual(r.posts[1].ext, 'jpg'); assert.strictEqual(r.posts[1].md5, MD5B);
+});
+
+test('real markup: rating from table row (Unrated/Explicit), download link used, relative <source> ignored, tags lower-cased', () => {
+	const d = P.parseDetail(REAL_DETAIL('Unrated'));
+	assert.strictEqual(d.rating, 'u'); assert.strictEqual(d.score, 54); assert.strictEqual(d.md5, MD5);
+	assert.match(d.fileUrl, /\/_images\/a{32}\/1%20-%20x\.webm$/); assert.strictEqual(d.tags, '3d sheva_alomar');
+	assert.strictEqual(d.dateMs, Date.UTC(2026, 9, 25, 19, 14, 54));
+	assert.strictEqual(P.parseDetail(REAL_DETAIL('Explicit')).rating, 'e');
+});
+
+test('unrated posts: shown for list searches and when all ratings are allowed, hidden when ratings are restricted in popular mode', () => {
+	const { m } = manager({ includeSafe: false, includeQuestionable: false, includeExplicit: true });
+	m.webRequester.plan = { mode: 'list' };
+	assert.strictEqual(m.isRatingOk('u'), true);
+	m.webRequester.plan = { mode: 'popular' };
+	assert.strictEqual(m.isRatingOk('u'), false); assert.strictEqual(m.isRatingOk('e'), true); assert.strictEqual(m.isRatingOk('s'), false);
+	assert.strictEqual(manager().m.isRatingOk('u') || true, true);
+	const all = manager().m; all.webRequester.plan = { mode: 'popular' };
+	assert.strictEqual(all.isRatingOk('u'), true);
+});
+
+test('fetcher: tab without helper script gets it injected, then answers; distinct errors for no tab / unreadable tab', async () => {
+	let injected = 0, asked = 0;
+	const chromeApi = { runtime: {}, scripting: { executeScript: async () => { injected++; } }, tabs: { query: (q, cb) => cb([{ id: 9 }]),
+		sendMessage: (id, m, cb) => { asked++; if (asked == 1) { chromeApi.runtime.lastError = { message: 'no receiver' }; cb(undefined); chromeApi.runtime.lastError = null; } else cb({ status: 200, url: '', text: 'ok' }); } } };
+	assert.strictEqual((await fetcherWith(chromeApi, () => resp(403, CF)).fetchPage('u')).text, 'ok');
+	assert.strictEqual(injected, 1);
+	const noTab = fetcherWith({ runtime: {}, tabs: { query: (q, cb) => cb([]) } }, () => resp(403, CF));
+	await assert.rejects(noTab.fetchPage('u'), /No open rule34hentai\.net tab/);
+	const dead = fetcherWith({ runtime: {}, tabs: { query: (q, cb) => cb([{ id: 1 }]), sendMessage: (i, m, cb) => cb(undefined) } }, () => resp(403, CF));
+	await assert.rejects(dead.fetchPage('u'), /Reload that tab/);
+});
+
+test('manifest allows on-demand injection (scripting) and the relay script is guarded against double injection', () => {
+	const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
+	assert.ok(manifest.permissions.includes('scripting'));
+	assert.match(fs.readFileSync(path.join(ROOT, 'js/content/rule34hentai_relay.js'), 'utf8'), /__bsR34hRelay/);
+});

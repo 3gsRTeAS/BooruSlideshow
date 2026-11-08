@@ -84,7 +84,7 @@ class Rule34HentaiRequester
 						md5: detail.md5 || e.md5,
 						fileUrl: detail.fileUrl,
 						previewUrl: e.thumbUrl,
-						tags: detail.tags || e.tags,
+						tags: e.tags || detail.tags,
 						rating: detail.rating,
 						score: detail.score,
 						width: isNaN(detail.width) ? e.width : detail.width,

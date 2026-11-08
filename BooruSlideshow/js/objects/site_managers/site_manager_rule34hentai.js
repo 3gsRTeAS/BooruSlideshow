@@ -160,6 +160,24 @@ class SiteManagerRule34Hentai extends SiteManager
 			this.hasExhaustedSearch = true;
 	}
 
+	// List searches already carry the rating in the query (server side), so only popular pages are
+	// checked here. Many posts are "unrated"; those can't be matched to a rating, so they're shown
+	// only when no rating restriction applies.
+	isRatingOk(rating)
+	{
+		const plan = this.webRequester.plan;
+
+		if (!plan || plan.mode != 'popular')
+			return true;
+
+		const allowed = this.getAllowedRatings();
+
+		if (rating == 'u')
+			return allowed == null || allowed.length == 3;
+
+		return this.isRatingAllowed(rating);
+	}
+
 	addSlide(p)
 	{
 		if (p == null || typeof p != 'object' || typeof p.fileUrl != 'string')
@@ -170,7 +188,7 @@ class SiteManagerRule34Hentai extends SiteManager
 
 		const tags = typeof p.tags == 'string' ? p.tags : '';
 
-		if (this.areSomeTagsAreBlacklisted(tags) || !this.isRatingAllowed(p.rating))
+		if (this.areSomeTagsAreBlacklisted(tags) || !this.isRatingOk(p.rating))
 			return false;
 
 		const id = String(p.id);

@@ -34,14 +34,14 @@ test('requires username + API key; missing/blank credentials produce no request 
 });
 
 test('request URL: posts.json, 1-based page, limit, encoded tags, login + api_key', () => {
-	const { m } = manager({ atfUsername: 'bob smith', atfApiKey: 'a&b=c' });
+	const { m } = manager({ atfUsername: 'bob smith', atfApiKey: 'a+b/c=d' });
 	const url = new URL(m.buildRequestUrl('cat rating:s sort:score', 3));
 	assert.strictEqual(url.origin, 'https://booru.allthefallen.moe');
 	assert.strictEqual(url.pathname, '/posts.json');
 	assert.strictEqual(url.searchParams.get('page'), '3');
 	assert.strictEqual(url.searchParams.get('limit'), '100');
 	assert.strictEqual(url.searchParams.get('login'), 'bob smith');
-	assert.strictEqual(url.searchParams.get('api_key'), 'a&b=c');
+	assert.strictEqual(url.searchParams.get('api_key'), 'a+b/c=d');
 	assert.strictEqual(url.searchParams.get('tags'), 'cat rating:s order:score');
 	assert.strictEqual(new URL(m.buildRequestUrl('cat', 1)).searchParams.get('page'), '1');
 });
@@ -236,4 +236,48 @@ test('a username containing & or = cannot inject parameters', () => {
 	assert.strictEqual(url.searchParams.get('login'), 'bo&b=1&api_key=evil');
 	assert.strictEqual(url.searchParams.get('api_key'), 'K');
 	assert.strictEqual(url.searchParams.get('b'), null);
+});
+
+test('a pasted query string in the API key field is reduced to the key', () => {
+	for (const pasted of ['XYZ123', 'api_key=XYZ123', '?api_key=XYZ123&login=bob', 'XYZ123&login=zhg2upk', ' XYZ123 \n'])
+	{
+		const { m } = manager({ atfUsername: 'bob', atfApiKey: pasted });
+		assert.strictEqual(m.getApiKey(), 'XYZ123', pasted);
+		assert.strictEqual(new URL(m.buildRequestUrl('cat', 1)).searchParams.get('api_key'), 'XYZ123');
+	}
+});
+
+test('only the ATFBooru web requester sends cookies', () => {
+	assert.strictEqual(manager().m.webRequester.withCredentials, true);
+	const sm = fakeSitesManager();
+	assert.strictEqual(new app.SiteManagerRule34(sm, 100).webRequester.withCredentials, false);
+	assert.strictEqual(new app.SiteManagerGelbooru(sm, 100).webRequester.withCredentials, false);
+});
+
+test('user-triggered ping explains why a site is offline (anti-bot page, bad status, empty)', () => {
+	const run = (respond) => {
+		const { m, sm } = manager();
+		m.webRequester = { makeWebsiteRequest(url, ok, err, after, fail) { respond(ok, err, after, fail); }, resetConnection() {} };
+		let done = false;
+		m.pingStatus(() => { done = true; }, true);
+		return { m, sm, done };
+	};
+	let r = run((ok, err, after) => { ok('<!DOCTYPE html><html>I am not a robot</html>'); after(); });
+	assert.strictEqual(r.m.isOnline, false); assert.match(r.sm.warnings[0], /anti-bot/); assert.ok(r.done);
+	r = run((ok, err, after) => { err('<html>blocked</html>', 403); after(); });
+	assert.match(r.sm.warnings[0], /anti-bot/);
+	r = run((ok, err, after) => { err('{"success":false,"message":"bad key SECRETKEY"}', 401); after(); });
+	assert.ok(r.sm.warnings[0].includes('bad key') && !r.sm.warnings[0].includes('SECRETKEY'));
+	r = run((ok, err, after) => { ok('[]'); after(); });
+	assert.match(r.sm.warnings[0], /Check your username and API key/);
+	r = run((ok, err, after, fail) => { fail(r0url()); });
+	function r0url() { return 'https://booru.allthefallen.moe/posts.json?api_key=SECRETKEY'; }
+	assert.ok(!r.sm.warnings[0].includes('SECRETKEY'));
+});
+
+test('the quiet startup ping shows no warnings', () => {
+	const { m, sm } = manager();
+	m.webRequester = { makeWebsiteRequest(url, ok, err, after, fail) { err('<html></html>', 403); after(); }, resetConnection() {} };
+	m.pingStatus(() => {});
+	assert.strictEqual(sm.warnings.length, 0);
 });

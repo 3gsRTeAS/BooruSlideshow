@@ -59,7 +59,9 @@ class SiteManager
 		this.isEnabled = true;
 	}
 
-	pingStatus(callback)
+	// showErrors: set when the user just did something (e.g. typed credentials) so a failure should
+	// be explained on screen. The startup check stays quiet.
+	pingStatus(callback, showErrors = false)
 	{
 		var url = this.buildPingRequestUrl();
 		
@@ -71,13 +73,17 @@ class SiteManager
 				function(responseText){
 					if (_this.doesResponseTextIndicateOnline(responseText))
 						_this.isOnline = true;
+					else if (showErrors)
+						_this.sitesManager.displayWarningMessage(_this.describeOfflineResponse(responseText));
 				},
-				this.handleErrorFromSiteResponse.bind(_this),
+				function(responseText, statusCode){
+					_this.handleErrorFromSiteResponse(responseText, statusCode, !showErrors);
+				},
 				function(){
 					callback(_this);
 				},
-				function(url, hideVisibleWarning = false){
-					_this.handleGeneralError(url, hideVisibleWarning);
+				function(url){
+					_this.handleGeneralError(url, !showErrors);
 					callback(_this);
 				},
 				true);
@@ -86,6 +92,12 @@ class SiteManager
 		{
 			callback(this);
 		}
+	}
+
+	// Explains a 200 response that did not look like a working site. Sites can give a better reason.
+	describeOfflineResponse(responseText)
+	{
+		return this.url + ' answered, but not with any posts.';
 	}
 
 	// Sites that need an account's API credentials override these.

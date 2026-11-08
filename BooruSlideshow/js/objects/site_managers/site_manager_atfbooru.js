@@ -11,6 +11,10 @@ class SiteManagerAtfBooru extends SiteManager
 	constructor(sitesManager, pageLimit)
 	{
 		super(sitesManager, SITE_ATFBOORU, 'https://booru.allthefallen.moe', pageLimit);
+
+		// The site's anti-bot check is remembered in a cookie. Sending the browser's cookies for this
+		// site (only this site) lets a check you already passed in Firefox count for extension requests.
+		this.webRequester.withCredentials = true;
 	}
 
 	getUsername()
@@ -18,9 +22,15 @@ class SiteManagerAtfBooru extends SiteManager
 		return (this.sitesManager.model.atfUsername || '').trim();
 	}
 
+	// API keys are plain tokens. If someone pastes a whole query string from the site
+	// ("api_key=XYZ&login=name" or "XYZ&login=name"), keep only the key.
 	getApiKey()
 	{
-		return (this.sitesManager.model.atfApiKey || '').trim();
+		var key = (this.sitesManager.model.atfApiKey || '').trim();
+
+		key = key.replace(/^\??api_key=/i, '');
+
+		return key.split(/[&\s]/)[0];
 	}
 
 	requiresCredentials()
@@ -76,6 +86,14 @@ class SiteManagerAtfBooru extends SiteManager
 	{
 		return 'booru.allthefallen.moe answered with a web page instead of data, which is usually its anti-bot check. ' +
 			'Open https://booru.allthefallen.moe in Firefox, let the check finish, then try again.';
+	}
+
+	describeOfflineResponse(responseText)
+	{
+		if (SiteManagerAtfBooru.looksLikeHtml(responseText))
+			return this.getAntiBotMessage();
+
+		return 'booru.allthefallen.moe answered but not with any posts. Check your username and API key under Sites.';
 	}
 
 	// Returns the parsed array of posts, or null if the body is not a JSON array of posts.

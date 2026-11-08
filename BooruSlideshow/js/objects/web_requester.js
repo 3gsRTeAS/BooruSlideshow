@@ -3,6 +3,7 @@ class WebRequester
     constructor()
     {
         this.METHOD = 'GET';
+        this.withCredentials = false;
     }
 
     getXhr(useSecondaryXhr = false)
@@ -32,6 +33,7 @@ class WebRequester
         let xhr = this.getXhr(useSecondaryXhr);
 		
 		xhr.open(this.METHOD, url, true);
+		xhr.withCredentials = this.withCredentials;
 
 		var webRequester = this;
 		

@@ -699,7 +699,7 @@ class SlideshowModel{
         siteManager.isOnline = false;
         siteManager.pingStatus(function (pingedSiteManager) {
             _this.view.showSiteOnlineStatus(pingedSiteManager.id, pingedSiteManager.isOnline);
-        });
+        }, true);
     }
 
     setStoreHistory(onOrOff)

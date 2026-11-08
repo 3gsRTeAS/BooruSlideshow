@@ -13,6 +13,9 @@ https://github.com/Chirmaya/BooruSlideshow/raw/master/BooruSlideshow.zip
 
 
 
+## rule34hentai.net
+No login. The site has no usable API and sits behind a Cloudflare check, so the extension reads its web pages. Keep https://rule34hentai.net open in a Firefox tab (let the check finish, reload the tab once) and the extension reads pages through that tab; it never tries to solve the check. Search with normal tags plus `rating:e`, `order:score_desc` etc., or add `popular_by_day`, `popular_by_month` or `popular_by_year` (optionally `popular_date:2024-05`) to browse the popular pages, e.g. `popular_by_month rating:e cat`. Page parsing was written from the site's URL/title formats and has not been checked against live HTML.
+
 ## rule34.xxx
 rule34.xxx's API requires an account. Log in at rule34.xxx, open *My Account > Options*, copy your API key and user ID, and enter them under **Sites** next to rule34.xxx. They are stored only in this browser's local extension storage (not synced).
 

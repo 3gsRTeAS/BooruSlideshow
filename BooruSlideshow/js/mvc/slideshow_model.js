@@ -16,6 +16,7 @@ class SlideshowModel{
             [SITE_GELBOORU]: false,
             [SITE_KONACHAN]: false,
             [SITE_RULE34]: false,
+            [SITE_RULE34HENTAI]: false,
             [SITE_SAFEBOORU]: true,
             [SITE_XBOORU]: false,
             [SITE_YANDERE]: false
@@ -104,6 +105,7 @@ class SlideshowModel{
         this.sitesManager.addSite(SITE_GELBOORU, standardPageLimit);
         this.sitesManager.addSite(SITE_KONACHAN, standardPageLimit);
         this.sitesManager.addSite(SITE_RULE34, standardPageLimit);
+        this.sitesManager.addSite(SITE_RULE34HENTAI, standardPageLimit);
         this.sitesManager.addSite(SITE_SAFEBOORU, standardPageLimit);
         this.sitesManager.addSite(SITE_XBOORU, standardPageLimit);
         this.sitesManager.addSite(SITE_YANDERE, standardPageLimit);
@@ -685,6 +687,33 @@ class SlideshowModel{
             (siteManager) => this.sitesToSearch[siteManager.id] &&
                 siteManager.requiresCredentials() &&
                 !siteManager.hasCredentials());
+    }
+
+    // Sites that depend on the user's own browser tab (rule34hentai.net) can come online after the
+    // startup check. Re-checks the selected ones that are offline, then calls done(wasAnyChecked).
+    recheckSelectedOfflineSites(done)
+    {
+        var _this = this;
+        var sites = this.sitesManager.siteManagers.filter(
+            (sm) => this.sitesToSearch[sm.id] && !sm.isOnline && typeof sm.isRecheckable == 'function' && sm.isRecheckable());
+
+        if (sites.length == 0)
+        {
+            done(false);
+            return;
+        }
+
+        var remaining = sites.length;
+
+        sites.forEach(function (sm) {
+            sm.pingStatus(function (pinged) {
+                _this.view.showSiteOnlineStatus(pinged.id, pinged.isOnline);
+                remaining--;
+
+                if (remaining == 0)
+                    done(true);
+            }, true);
+        });
     }
 
     // Credentials changed, so the site's online status may have changed too.

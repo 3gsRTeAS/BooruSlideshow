@@ -75,6 +75,8 @@ class PersonalList
                 listItem.tags = await _this.getImageTagsE621(listItem.id, webRequester);
             }else if (listItem.siteId == SITE_RULE34){
                 listItem.tags = await _this.getImageTagsRule34(listItem.id, webRequester);
+            }else if (listItem.siteId == SITE_RULE34HENTAI){
+                listItem.tags = await _this.getImageTagsR34H(listItem.id);
             }else if (listItem.siteId == SITE_ATFBOORU){
                 listItem.tags = await _this.getImageTagsATF(listItem.id, webRequester);
             }else if (listItem.siteId == SITE_DANBOORU){
@@ -260,6 +262,26 @@ class PersonalList
     }
 
     // rule34.xxx's API needs the account's API key and user ID (kept in storage.local).
+    // rule34hentai.net has no API; the tags come from the post page (see js/objects/rule34hentai/).
+    async getImageTagsR34H(id)
+    {
+        if (!/^\d{1,12}$/.test(String(id)))
+            return '';
+
+        try
+        {
+            var fetcher = new Rule34HentaiFetcher(chrome, (...a) => fetch(...a));
+            var page = await fetcher.fetchPage('https://rule34hentai.net/post/view/' + id);
+            var detail = page.status == 200 ? Rule34HentaiParser.parseDetail(page.text) : null;
+
+            return detail ? detail.tags : '';
+        }
+        catch (e)
+        {
+            return '';
+        }
+    }
+
     async getImageTagsRule34(id, webRequester)
     {
         var credentials = await DataLoader.storageGet(chrome.storage.local, ['rule34UserId', 'rule34ApiKey']);

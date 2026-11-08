@@ -283,6 +283,32 @@ class SlideshowController
             return;
         }
 
+        if (!this._retriedAfterRecheck)
+        {
+            var _this = this;
+
+            this._retriedAfterRecheck = true;
+            this._model.recheckSelectedOfflineSites(function (wasChecked) {
+                if (wasChecked)
+                {
+                    _this.searchButtonClicked();
+                    _this._retriedAfterRecheck = false;
+                    return;
+                }
+
+                _this._retriedAfterRecheck = false;
+                _this.continueSearchAfterChecks();
+            });
+            return;
+        }
+
+        this.continueSearchAfterChecks();
+    }
+
+    continueSearchAfterChecks()
+    {
+        var searchText = this._model.searchText;
+
         if (!this._model.hasAtLeastOneOnlineSiteSelected())
         {
             this._view.displayWarningMessage('No online sites were selected to be searched.');

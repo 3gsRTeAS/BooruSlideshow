@@ -108,6 +108,7 @@ class DataLoader
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_GELBOORU);
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_KONACHAN);
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_RULE34);
+                _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_RULE34HENTAI);
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_SAFEBOORU);
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_XBOORU);
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_YANDERE);

@@ -80,6 +80,7 @@
 						</li>
 						<li><label><input type="checkbox" name="sites-to-search" value="KONA" />konachan.com</label></li>
 						<li><label><input type="checkbox" name="sites-to-search" value="RULE" />rule34.xxx</label></li>
+						<li><label title="No login needed. Needs https://rule34hentai.net open in a Firefox tab (after its Cloudflare check). Extra search terms: popular_by_day, popular_by_month, popular_by_year, popular_date:YYYY-MM-DD. Also supports rating:e and order:score_desc."><input type="checkbox" name="sites-to-search" value="R34H" />rule34hentai.net</label></li>
 						<li id="rule34-userid-container">
 							<label><input type="login" id="rule34-userid" placeholder="rule34 user ID" autocomplete="off" /></label>
 						</li>
@@ -206,6 +207,11 @@
 		<script src="js/objects/site_managers/site_manager_gelbooru.js"></script>
 		<script src="js/objects/site_managers/site_manager_konachan.js"></script>
 		<script src="js/objects/site_managers/site_manager_rule34.js"></script>
+		<script src="js/objects/rule34hentai/r34h_search.js"></script>
+		<script src="js/objects/rule34hentai/r34h_parser.js"></script>
+		<script src="js/objects/rule34hentai/r34h_fetcher.js"></script>
+		<script src="js/objects/rule34hentai/r34h_requester.js"></script>
+		<script src="js/objects/site_managers/site_manager_rule34hentai.js"></script>
 		<script src="js/objects/site_managers/site_manager_safebooru.js"></script>
 		<script src="js/objects/site_managers/site_manager_xbooru.js"></script>
 		<script src="js/objects/site_managers/site_manager_yandere.js"></script>

@@ -2,11 +2,9 @@
     {
         "id": 1,
         "priority": 1,
-        "action":
-        {
+        "action": {
             "type": "modifyHeaders",
-            "requestHeaders":
-            [
+            "requestHeaders": [
                 {
                     "header": "Referer",
                     "operation": "set",
@@ -14,10 +12,34 @@
                 }
             ]
         },
-        "condition":
-        {
+        "condition": {
             "urlFilter": "https://*.gelbooru.com/*",
-            "resourceTypes": ["main_frame", "image", "media"]
+            "resourceTypes": [
+                "main_frame",
+                "image",
+                "media"
+            ]
+        }
+    },
+    {
+        "id": 2,
+        "priority": 1,
+        "action": {
+            "type": "modifyHeaders",
+            "requestHeaders": [
+                {
+                    "header": "Referer",
+                    "operation": "set",
+                    "value": "https://rule34hentai.net/"
+                }
+            ]
+        },
+        "condition": {
+            "urlFilter": "https://rule34hentai.net/_images/",
+            "resourceTypes": [
+                "image",
+                "media"
+            ]
         }
     }
 ]

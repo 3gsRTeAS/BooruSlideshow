@@ -1,5 +1,10 @@
 Changelog
 
+Version 10.9
+* Added rule34hentai.net (no login). It has no usable API, so pages are read directly. Because of its Cloudflare check, keep https://rule34hentai.net open in a Firefox tab (let the check finish, reload the tab once); the extension then reads pages through that tab.
+* Search supports rating:e / rating=e, order:score_desc / order=score_desc, other tags, and the extra terms popular_by_day, popular_by_month, popular_by_year (optionally popular_date:YYYY-MM-DD). Each next page goes one period further back. Popular searches can be combined with tags, rating:, ext:, score and size filters.
+* If the site was offline at startup, a search re-checks it first.
+
 Version 10.8
 * Added booru.allthefallen.moe (ATFBooru) back, using your account username and API key (Danbooru-style login/api_key). Enter them under Sites. They are stored only in local extension storage.
 * If the site answers with its anti-bot web page, you now get a clear message instead of a silent failure.

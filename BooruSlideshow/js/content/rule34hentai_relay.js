@@ -5,11 +5,13 @@
 // request carries the tab's own cookies. Nothing here solves or bypasses the check; if the tab has
 // not passed it, the answer is simply a challenge page and the extension tells the user.
 (function () {
-	if (typeof window !== 'undefined' && window.__bsR34hRelay)
-		return; // already injected
+	// Version 2 added media downloads. A copy left in a tab by an older build lacks it, so only a
+	// copy of this same version counts as "already injected".
+	if (typeof window !== 'undefined' && window.__bsR34hRelay === 2)
+		return;
 
 	if (typeof window !== 'undefined')
-		window.__bsR34hRelay = true;
+		window.__bsR34hRelay = 2;
 
 	const MAX_BYTES = 4 * 1024 * 1024;
 	const ALLOWED_PATH = /^\/(post\/list(\/|$)|post\/view\/\d{1,12}\/?$|popular_by_(day|month|year)\/?$)/;

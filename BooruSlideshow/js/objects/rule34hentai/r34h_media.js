@@ -58,6 +58,18 @@ class Rule34HentaiMedia
 		else Rule34HentaiMedia.active--;
 	}
 
+	// One console line per reason, so a failing setup can be diagnosed without flooding the log.
+	static warn(reason)
+	{
+		Rule34HentaiMedia.warned = Rule34HentaiMedia.warned || new Set();
+
+		if (!Rule34HentaiMedia.warned.has(reason))
+		{
+			Rule34HentaiMedia.warned.add(reason);
+			console.warn('rule34hentai.net media could not be loaded through the site tab: ' + reason);
+		}
+	}
+
 	static async download(url)
 	{
 		await Rule34HentaiMedia.acquire();
@@ -68,7 +80,12 @@ class Rule34HentaiMedia
 			const a = relayed.answer;
 
 			if (a == null || a.status !== 200 || !(a.data instanceof ArrayBuffer))
+			{
+				Rule34HentaiMedia.warn(a == null
+					? (relayed.tabCount == 0 ? 'no open rule34hentai.net tab' : 'the open tab did not answer; reload that tab (F5)')
+					: 'the tab got status ' + a.status + (a.type ? ' (' + a.type + ')' : ''));
 				return null;
+			}
 
 			if (!/^(image|video)\/[a-z0-9.+-]+$/i.test(a.type || '') || a.data.byteLength > Rule34HentaiMedia.MAX_FILE_BYTES)
 				return null;

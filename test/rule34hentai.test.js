@@ -307,7 +307,7 @@ test('fetcher: tab without helper script gets it injected, then answers; distinc
 test('manifest allows on-demand injection (scripting) and the relay script is guarded against double injection', () => {
 	const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
 	assert.ok(manifest.permissions.includes('scripting'));
-	assert.match(fs.readFileSync(path.join(ROOT, 'js/content/rule34hentai_relay.js'), 'utf8'), /__bsR34hRelay/);
+	assert.match(fs.readFileSync(path.join(ROOT, 'js/content/rule34hentai_relay.js'), 'utf8'), /__bsR34hRelay === 2/);
 });
 
 // ---- media (pictures/videos) are fetched through the open tab ----

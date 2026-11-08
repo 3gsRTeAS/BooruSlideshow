@@ -35,8 +35,10 @@ class SlideshowModel{
         this.derpibooruApiKey = '';
         this.e621Login = ''
         this.e621ApiKey = ''
-        this.gelbLoginId = ''
+        this.gelbUserId = ''
         this.gelbApiKey = ''
+        this.rule34UserId = '';
+        this.rule34ApiKey = '';
         this.storeHistory = true;
         this.searchHistory = [];
 
@@ -69,6 +71,8 @@ class SlideshowModel{
         this.e621ApiKeyUpdatedEvent = new Event(this);
         this.gelbUserIdUpdatedEvent = new Event(this);
         this.gelbApiKeyUpdatedEvent = new Event(this);
+        this.rule34UserIdUpdatedEvent = new Event(this);
+        this.rule34ApiKeyUpdatedEvent = new Event(this);
         this.storeHistoryUpdatedEvent = new Event(this);
         this.searchHistoryUpdatedEvent = new Event(this);
         this.favoriteButtonUpdatedEvent = new Event(this);
@@ -164,25 +168,27 @@ class SlideshowModel{
 	
     areSomeTagsAreBlacklisted(tags)
     {
-        var postTags = tags.trim().split(" ");
-        var blacklistTags = this.blacklist.trim().replace(/(\r\n|\n|\r)/gm," ").split(" ");
-        
-        if (postTags.length == 0 || blacklistTags.length == 0)
+        if (!tags)
             return false;
-        
-        for (let blacklistTag of blacklistTags)
+
+        if (this.blacklistCacheSource !== this.blacklist)
         {
-            for (let postTag of postTags)
-            {
-                if (blacklistTag == postTag)
-                {
-                    return true;
-                }
-            }
+            this.blacklistCacheSource = this.blacklist;
+            this.blacklistTagSet = new Set(
+                this.blacklist.trim().split(/\s+/).filter(tag => tag != ''));
         }
-        
+
+        if (this.blacklistTagSet.size == 0)
+            return false;
+
+        for (let postTag of tags.trim().split(/\s+/))
+        {
+            if (this.blacklistTagSet.has(postTag))
+                return true;
+        }
+
         return false;
-	}
+    }
 
     setSlideNumberToFirst()
     {
@@ -628,6 +634,48 @@ class SlideshowModel{
         this.dataLoader.saveGelbApiKey();
 
         this.gelbApiKeyUpdatedEvent.notify();
+    }
+
+    setRule34UserId(rule34UserId)
+    {
+        this.rule34UserId = rule34UserId;
+
+        this.dataLoader.saveRule34UserId();
+
+        this.rule34UserIdUpdatedEvent.notify();
+    }
+
+    setRule34ApiKey(rule34ApiKey)
+    {
+        this.rule34ApiKey = rule34ApiKey;
+
+        this.dataLoader.saveRule34ApiKey();
+
+        this.rule34ApiKeyUpdatedEvent.notify();
+    }
+
+    // Selected sites that need an API key / user ID the user hasn't entered yet.
+    getSelectedSitesMissingCredentials()
+    {
+        return this.sitesManager.siteManagers.filter(
+            (siteManager) => this.sitesToSearch[siteManager.id] &&
+                siteManager.requiresCredentials() &&
+                !siteManager.hasCredentials());
+    }
+
+    // Credentials changed, so the site's online status may have changed too.
+    repingSite(siteId)
+    {
+        var _this = this;
+        var siteManager = this.sitesManager.siteManagers.find(sm => sm.id == siteId);
+
+        if (siteManager == null)
+            return;
+
+        siteManager.isOnline = false;
+        siteManager.pingStatus(function (pingedSiteManager) {
+            _this.view.showSiteOnlineStatus(pingedSiteManager.id, pingedSiteManager.isOnline);
+        });
     }
 
     setStoreHistory(onOrOff)

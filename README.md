@@ -13,10 +13,20 @@ https://github.com/Chirmaya/BooruSlideshow/raw/master/BooruSlideshow.zip
 
 
 
-TODO: rework below for Firefox
+## rule34.xxx
+rule34.xxx's API requires an account. Log in at rule34.xxx, open *My Account > Options*, copy your API key and user ID, and enter them under **Sites** next to rule34.xxx. They are stored only in this browser's local extension storage (not synced).
 
-This should work:
-1. Download the above zip file.
-3. Unzip the file.
-4. Go to chrome://extensions/ and check the box for Developer mode in the top right.
-5. Click the Load unpacked extension button and select the unzipped folder for your extension to install it.
+## Install for local testing (Firefox 113+)
+1. Go to `about:debugging#/runtime/this-firefox`.
+2. Click **Load Temporary Add-on...** and pick `BooruSlideshow/manifest.json` (or a built zip from `dist/`).
+3. Open `about:addons` > Booru Slideshow > **Permissions** and make sure the site access permissions are granted (Firefox MV3 does not always grant host permissions automatically).
+4. Click the toolbar icon to open the slideshow.
+
+Temporary add-ons are removed when Firefox restarts. For a permanent install, use the signed build from addons.mozilla.org, or Firefox Developer Edition / Nightly / ESR with `xpinstall.signatures.required` set to `false` for an unsigned zip.
+
+## Development
+    npm install
+    npm test        # unit tests (node:test + jsdom)
+    npm run lint    # web-ext lint
+    npm run build   # dist/booru_slideshow-<version>.zip
+    npm run run:firefox

@@ -72,7 +72,7 @@ class SiteManagerDanbooru extends SiteManager
 					jsonPost.tag_string
 				);
 				
-				this.allUnsortedSlides.push(newSlide);
+				this.pushSlideIfSafe(newSlide);
 			}
 		}
 	}

@@ -133,7 +133,7 @@ class SiteManagerDerpibooru extends SiteManager
 					tags
 				);
 				
-				this.allUnsortedSlides.push(newSlide);
+				this.pushSlideIfSafe(newSlide);
 			}
 		}
 	}

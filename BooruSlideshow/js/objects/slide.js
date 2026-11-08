@@ -16,6 +16,7 @@ class Slide
 		this.tags = tags;
 		this.isPreloaded = false;
 		this.isPreloading = false;
+		this.hasFailed = false;
 		this.preloadingImage = null;
 		this.preloadingVideo = null;
 		this.callbackToRunAfterPreloadingFinishes = null;
@@ -41,7 +42,7 @@ class Slide
 
 	preload()
 	{
-		if (!this.isPreloaded && !this.isPreloading)
+		if (!this.isPreloaded && !this.isPreloading && !this.hasFailed)
 		{
 			this.isPreloading = true;
 			
@@ -59,87 +60,89 @@ class Slide
 
 	preloadImage()
 	{
-		this.preloadingImage = new Image();
-		
 		var slide = this;
-		
-		this.preloadingImage.onload = function(){
-			slide.isPreloaded = true;
+		var image = new Image();
+		this.preloadingImage = image;
+
+		image.decoding = 'async';
+		image.referrerPolicy = 'no-referrer';
+
+		var finish = function(succeeded){
+			image.onload = null;
+			image.onerror = null;
+
+			// Drop the reference so decoded pixels can be garbage collected. The file stays in
+			// the browser's HTTP cache, so displaying the slide later does not re-download it.
+			slide.preloadingImage = null;
+
 			slide.isPreloading = false;
-			
+			slide.isPreloaded = succeeded;
+			slide.hasFailed = !succeeded;
+
+			// Run the callback on failure too, so a broken slide can't stall a playing slideshow.
 			if (slide.callbackToRunAfterPreloadingFinishes != null)
 			{
 				slide.callbackToRunAfterPreloadingFinishes.call(slide);
 			}
-		}
-		
-		this.preloadingImage.onerror = function(){
-			this.isPreloading = false;
-		}
-		
-		this.preloadingImage.src = this.fileUrl;
+		};
+
+		image.onload = function(){ finish(true); };
+		image.onerror = function(){ finish(false); };
+
+		image.src = this.fileUrl;
 	}
 
 	preloadVideo()
 	{
-		this.preloadingVideo = document.createElement('video');
-		// are these being made and not garbage collected maybe? could be why the limit seems consistent.
-		
 		var slide = this;
+		var video = document.createElement('video');
+		this.preloadingVideo = video;
+
+		video.muted = true;
+		video.preload = 'auto';
 
 		logForDev('this.preloadingVideo = ' + slide.fileUrl);
 
-		let preloaded = function() {
-			logForDev('this.preloadingVideo:loadeddata = ' + slide.fileUrl);
+		var release = function() {
+			video.removeEventListener('loadeddata', onLoaded, false);
+			video.removeEventListener('error', onError, false);
 
-			slide.isPreloaded = true;
+			// Pause + removeAttribute + load() is what actually closes the connection and frees the decoder.
+			video.pause();
+			video.removeAttribute('src');
+			video.load();
+
+			slide.preloadingVideo = null;
+		};
+
+		var finish = function(succeeded) {
+			release();
+
 			slide.isPreloading = false;
-			slide.preloadingVideo.removeEventListener('loadeddata', preloaded);
-			slide.preloadingVideo.removeEventListener('error', errored);
-			
+			slide.isPreloaded = succeeded;
+			slide.hasFailed = !succeeded;
+
 			if (slide.callbackToRunAfterPreloadingFinishes != null)
 			{
-				logForDev('slide.callbackToRunAfterPreloadingFinishes');
 				slide.callbackToRunAfterPreloadingFinishes.call(slide);
 			}
-
-			// Unload resources
-			if (slide.preloadingVideo.src.length > 0)
-			{
-				slide.preloadingVideo.pause();
-				slide.preloadingVideo.src = '';
-			}
-			//slide.preloadingVideo.load();
-			//slide.preloadingVideo.remove();
-		}
-
-		let errored = function() {
-			logForDev('this.preloadingVideo:errored = ' + slide.fileUrl);
-
-			slide.isPreloading = false;
-			/*slide.preloadingVideo.removeEventListener('loadeddata', preloaded, false);
-			slide.preloadingVideo.removeEventListener('error', errored), true;
-
-			console.log("errored");
-			console.log(slide.preloadingVideo);
-
-			// Unload resources
-			if (slide.preloadingVideo.src.length > 0)
-			{
-				console.log('aaaa');
-				slide.preloadingVideo.pause();
-				slide.preloadingVideo.src = '';
-			}
-			
-			//slide.preloadingVideo.load();
-			//slide.preloadingVideo.remove();*/
 		};
-		
-		this.preloadingVideo.addEventListener('loadeddata', preloaded, false);
-		this.preloadingVideo.addEventListener('error', errored, true);
-		
-		this.preloadingVideo.src = this.fileUrl;
-		this.preloadingVideo.load();
+
+		var onLoaded = function() {
+			logForDev('this.preloadingVideo:loadeddata = ' + slide.fileUrl);
+			finish(true);
+		};
+
+		var onError = function() {
+			logForDev('this.preloadingVideo:errored = ' + slide.fileUrl);
+			finish(false);
+		};
+
+		video.addEventListener('loadeddata', onLoaded, false);
+		video.addEventListener('error', onError, false);
+
+		video.src = this.fileUrl;
+		video.load();
 	}
 
 	addCallback(callback)

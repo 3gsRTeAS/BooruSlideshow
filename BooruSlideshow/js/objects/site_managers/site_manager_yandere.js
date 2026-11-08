@@ -94,6 +94,6 @@ class SiteManagerYandere extends SiteManager
 			jsonPost.tags
 		);
 
-		this.allUnsortedSlides.push(newSlide);
+		this.pushSlideIfSafe(newSlide);
 	}
 }

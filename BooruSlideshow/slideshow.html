@@ -43,7 +43,7 @@
 					<ul>
 						<li><label><input type="checkbox" name="sites-to-search" value="DANB" />danbooru.donmai.us</label></li>
 						<li><label><input type="checkbox" name="sites-to-search" value="DERP" />derpibooru.org</label></li>
-						<li id="derpibooru-api-key-container"><span><a href="https://derpibooru.org/users/edit" target="_blank">(get API key here)</a></span><br />
+						<li id="derpibooru-api-key-container"><span><a href="https://derpibooru.org/users/edit" target="_blank" rel="noopener noreferrer">(get API key here)</a></span><br />
 							<label><input type="password" id="derpibooru-api-key" /></label>
 						</li>
 						<li><label><input type="checkbox" name="sites-to-search" value="E621" />e621.net</label></li>
@@ -52,7 +52,7 @@
 						</li>
 						<li id="e621-api-key-container">
 							<br />
-							<span><a href="https://e621.net/users/home" target="_blank">(get API key here)</a></span>
+							<span><a href="https://e621.net/users/home" target="_blank" rel="noopener noreferrer">(get API key here)</a></span>
 							<br />
 							<label><input type="password" id="e621-api-key" placeholder="e621 API key"/></label>
 						</li>
@@ -64,12 +64,21 @@
 						</li>
 						<li id="gelb-api-key-container">
 							<br />
-							<span><a href="https://gelbooru.com/index.php?page=account&s=options" target="_blank">(get API key here)</a></span>
+							<span><a href="https://gelbooru.com/index.php?page=account&s=options" target="_blank" rel="noopener noreferrer">(get API key here)</a></span>
 							<br />
 							<label><input type="password" id="gelb-api-key" placeholder="Gelbooru API key"/></label>
 						</li>
 						<li><label><input type="checkbox" name="sites-to-search" value="KONA" />konachan.com</label></li>
 						<li><label><input type="checkbox" name="sites-to-search" value="RULE" />rule34.xxx</label></li>
+						<li id="rule34-userid-container">
+							<label><input type="login" id="rule34-userid" placeholder="rule34 user ID" autocomplete="off" /></label>
+						</li>
+						<li id="rule34-api-key-container">
+							<br />
+							<span><a href="https://rule34.xxx/index.php?page=account&s=options" target="_blank" rel="noopener noreferrer">(get API key here)</a></span>
+							<br />
+							<label><input type="password" id="rule34-api-key" placeholder="rule34 API key" autocomplete="off" /></label>
+						</li>
 						<li><label><input type="checkbox" name="sites-to-search" value="SAFE" />safebooru.org</label></li>
 						<li><label><input type="checkbox" name="sites-to-search" value="XBOO" />xbooru.com</label></li>
 						<li><label><input type="checkbox" name="sites-to-search" value="YAND" />yande.re</label></li>
@@ -170,7 +179,7 @@
 						<li>[<b>E</b>] Open image source</li>
 						<li>[<b>L</b>] Download image to <i>/Downloads/bs/</i></li>
 						<li>[<b>G</b>] Fave/Unfave image</li>
-						<li><i>Issues or suggestions: <a href="https://github.com/Chirmaya/BooruSlideshow/issues" target="_blank">GitHub</a></i></li>
+						<li><i>Issues or suggestions: <a href="https://github.com/Chirmaya/BooruSlideshow/issues" target="_blank" rel="noopener noreferrer">GitHub</a></i></li>
 					</ul>
 				</div>
             </div>

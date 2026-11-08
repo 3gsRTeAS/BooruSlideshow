@@ -118,7 +118,7 @@ class SiteManagerE621 extends SiteManager
 			jsonPost.tags
 		);
 
-		this.allUnsortedSlides.push(newSlide);
+		this.pushSlideIfSafe(newSlide);
 	}
 
 	RecreateUrlFromMd5(file)

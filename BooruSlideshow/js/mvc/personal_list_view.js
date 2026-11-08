@@ -232,7 +232,7 @@ class PersonalListView
         if (currentSlide == null)
             return;
 
-        window.open(currentSlide.viewableWebsitePostUrl, "_blank");
+        this.openUrlInNewWindow(currentSlide.viewableWebsitePostUrl);
     }
 
     clearUI() {
@@ -256,22 +256,22 @@ class PersonalListView
 	}
 	
     displayWarningMessage(message) {
-        this.uiElements.warningMessage.innerHTML = message;
+        this.uiElements.warningMessage.textContent = message;
         this.uiElements.warningMessage.style.display = 'block';
     }
 
     clearWarningMessage() {
-        this.uiElements.warningMessage.innerHTML = '';
+        this.uiElements.warningMessage.textContent = '';
         this.uiElements.warningMessage.style.display = 'none';
     }
 	
 	displayInfoMessage(message) {
-        this.uiElements.infoMessage.innerHTML = message;
+        this.uiElements.infoMessage.textContent = message;
         this.uiElements.infoMessage.style.display = 'block';
     }
 
     clearInfoMessage() {
-        this.uiElements.infoMessage.innerHTML = '';
+        this.uiElements.infoMessage.textContent = '';
         this.uiElements.infoMessage.style.display = 'none';
     }
 
@@ -291,6 +291,23 @@ class PersonalListView
         this.uiElements.currentImage.onload = function () {
             _this.hideLoadingAnimation();
         }
+
+        this.uiElements.currentImage.onerror = function () {
+            // Fires with no src too (after clearImage); only report real failures.
+            if (this.hasAttribute('src'))
+            {
+                _this.hideLoadingAnimation();
+                _this.displayInfoMessage('This image failed to load.');
+            }
+        }
+
+        this.uiElements.currentVideo.addEventListener('error', function () {
+            if (this.hasAttribute('src'))
+            {
+                _this.hideLoadingAnimation();
+                _this.displayInfoMessage('This video failed to load.');
+            }
+        }, false);
 		
 		this.uiElements.currentVideo.addEventListener('loadeddata', function() {
 			_this.hideLoadingAnimation();
@@ -349,6 +366,7 @@ class PersonalListView
 	displayImage(currentSlide) {
         var currentImage = this.uiElements.currentImage;
 
+        currentImage.decoding = 'async';
         currentImage.src = currentSlide.fileUrl;
         currentImage.setAttribute('alt', currentSlide.id);
         currentImage.style.display = 'inline';
@@ -490,7 +508,7 @@ class PersonalListView
 
         logForDev('clearing image1');
 
-        currentImage.src = '';
+        currentImage.removeAttribute('src');
         currentImage.removeAttribute('alt');
         currentImage.style.display = 'none';
     }
@@ -498,7 +516,13 @@ class PersonalListView
 	clearVideo() {
         var currentVideo = this.uiElements.currentVideo;
 
-        currentVideo.src = '';
+        if (currentVideo.hasAttribute('src'))
+        {
+            currentVideo.pause();
+            currentVideo.removeAttribute('src');
+            currentVideo.load();
+        }
+
         currentVideo.style.display = 'none';
     }
 	
@@ -549,13 +573,13 @@ class PersonalListView
     }
 
     updateCurrentNumberDisplay() {
-        this.uiElements.currentSlideNumber.innerHTML = this._model.getCurrentSlideNumber();
+        this.uiElements.currentSlideNumber.textContent = this._model.getCurrentSlideNumber();
     }
 
     updateTotalNumberDisplay() {
         var totalNumberText = this._model.getPersonalListItemCount();
 
-        this.uiElements.totalSlideNumber.innerHTML = totalNumberText;
+        this.uiElements.totalSlideNumber.textContent = totalNumberText;
     }
 
     updateFirstPreviousButtons() {
@@ -626,7 +650,11 @@ class PersonalListView
         var newThumbnailImage = document.createElement("img");
         newThumbnailImage.id = 'thumbnail-image-' + id;
         newThumbnailImage.classList.add("thumbnail-image");
-        newThumbnailImage.src = thumbnailImageUrl;
+        newThumbnailImage.decoding = 'async';
+        newThumbnailImage.loading = 'lazy';
+        newThumbnailImage.referrerPolicy = 'no-referrer';
+        if (thumbnailImageUrl)
+            newThumbnailImage.src = thumbnailImageUrl;
 
         if (showGreyedOut) {
             newThumbnailImage.classList.add("thumbnail-image-greyed-out");
@@ -738,7 +766,10 @@ class PersonalListView
     }
 
     openUrlInNewWindow(url) {
-        window.open(url, '_blank');
+        var safeUrl = sanitizeHttpsUrl(url);
+
+        if (safeUrl != null)
+            window.open(safeUrl, '_blank', 'noopener,noreferrer');
     }
 
     downloadCurrentSlide()
@@ -749,7 +780,7 @@ class PersonalListView
             return;
         
         let url = currentSlide.fileUrl;
-        let filename = "bs/" + url.substring(url.lastIndexOf('/')+1);
+        let filename = buildDownloadFilename(url);
         
         chrome.downloads.download({
             url: currentSlide.fileUrl,

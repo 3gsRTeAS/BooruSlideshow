@@ -46,7 +46,7 @@ class SiteManagerSafebooru extends SiteManager
 					SITE_SAFEBOORU,
 					xmlPost.getAttribute('id'),
 					this.reformatFileUrl(xmlPost.getAttribute('file_url')),
-					this.reformatFileUrl(xmlPost.getAttribute('file_url')),
+					this.reformatFileUrl(xmlPost.getAttribute('preview_url')),
 					this.url + '/index.php?page=post&s=view&id=' + xmlPost.getAttribute('id'),
 					xmlPost.getAttribute('width'),
 					xmlPost.getAttribute('height'),
@@ -57,7 +57,7 @@ class SiteManagerSafebooru extends SiteManager
 					xmlPost.getAttribute('tags')
 				);
 				
-				this.allUnsortedSlides.push(newSlide);
+				this.pushSlideIfSafe(newSlide);
 			}
 		}
 	}

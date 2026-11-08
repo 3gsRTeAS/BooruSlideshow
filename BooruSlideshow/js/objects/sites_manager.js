@@ -12,6 +12,9 @@ class SitesManager{
 		this.isTryingToLoadMoreSlides = false;
 		this.callbackToRunAfterAllSitesFinishedSearching = null;
 		
+		// Images are cheap to preload ahead of time; videos are not. Only the next few are fetched.
+		this.maxVideoPreloadDistance = 2;
+
 		this.sortingTypeDateDesc = 'order:id_desc';
 		this.sortingTypeDateAsc = 'order:id_asc';
 		this.sortingTypeScoreDesc = 'order:score_desc';
@@ -235,7 +238,7 @@ class SitesManager{
 	buildSortedSlideList()
 	{
 		var slidesFromAllSitesToSort = [];
-		var md5Hashes = [];
+		var md5Hashes = new Set();
 		
 		for (var i = 0; i < this.siteManagers.length; i++)
 		{
@@ -260,13 +263,13 @@ class SitesManager{
 			}
 			else
 			{
-				if(md5Hashes.includes(slide.md5))
+				if(md5Hashes.has(slide.md5))
 				{
 					return false;
 				}
 				else
 				{
-					md5Hashes.push(slide.md5);
+					md5Hashes.add(slide.md5);
 					return true;
 				}
 			}
@@ -520,7 +523,8 @@ class SitesManager{
 	{
 		var currentSlide = this.allSortedSlides[this.currentSlideNumber - 1];
 		
-		currentSlide.preload();
+		if (currentSlide)
+			currentSlide.preload();
 	}
 
 	preloadNextSlideIfNeeded()
@@ -547,6 +551,9 @@ class SitesManager{
 				return;
 			
 			var slide = nextSlides[i];
+
+			if (slide.hasFailed || (slide.isVideo() && i >= this.maxVideoPreloadDistance))
+				continue;
 			
 			if (!slide.isPreloaded)
 			{
@@ -574,7 +581,9 @@ class SitesManager{
 			
 			if (foundStartingSlide)
 			{
-				if (!slide.isPreloaded)
+				var tooFarForVideo = slide.isVideo() && i >= this.maxVideoPreloadDistance;
+
+				if (!slide.isPreloaded && !slide.hasFailed && !tooFarForVideo)
 				{
 					slide.preload();
 					break;
@@ -597,7 +606,7 @@ class SitesManager{
 			return false;
 		}
 
-		return currentSlide.isPreloaded;
+		return currentSlide.isPreloaded || currentSlide.hasFailed;
 	}
 
 	hasAtLeastOneOnlineSiteSelected()

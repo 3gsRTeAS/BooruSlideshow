@@ -60,7 +60,7 @@ class SiteManagerXbooru extends SiteManager
 					xmlPost.getAttribute('tags')
 				);
 				
-				this.allUnsortedSlides.push(newSlide);
+				this.pushSlideIfSafe(newSlide);
 			}
 		}
 	}

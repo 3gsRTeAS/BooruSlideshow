@@ -1,5 +1,12 @@
 Changelog
 
+Version 10.7
+* rule34.xxx now uses its authenticated API (api.rule34.xxx). Enter your rule34.xxx API key and user ID under Sites (same idea as Gelbooru). Without them rule34.xxx is shown as offline and a clear message is displayed.
+* Credentials (derpibooru/e621/gelbooru/rule34) are now kept in local extension storage instead of synced storage; existing values are moved automatically.
+* Favorites are now read from the same storage area they are saved to.
+* Security: remote tags/messages are rendered as text (no HTML injection), only https media/post URLs are accepted, API keys are redacted from error messages, download names are sanitized, unused "webRequest" permission removed, extension CSP added.
+* Performance: videos and images are released properly after preloading, only the next 2 videos are preloaded, failed media no longer stalls the slideshow, thumbnails load lazily, Safebooru thumbnails use the real thumbnail.
+* Requires Firefox 113 or newer.
 Version 10.6
 * Quick fix to match the Gelbooru API
 

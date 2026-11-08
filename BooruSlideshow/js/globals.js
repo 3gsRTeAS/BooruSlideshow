@@ -31,6 +31,17 @@ let G_KEY_ID = 71;
 let E_KEY_ID = 69;
 let R_KEY_ID = 82;
 
+// Stored in storage.local only (never synced).
+let CREDENTIAL_STORAGE_KEYS = [
+	'derpibooruApiKey',
+	'e621Login',
+	'e621ApiKey',
+	'gelbUserId',
+	'gelbApiKey',
+	'rule34UserId',
+	'rule34ApiKey'
+];
+
 let SITE_QUERY_TERM_ASSOCIATIONS = {};
 
 /* Leaving in for reference till this stuff is reworked.

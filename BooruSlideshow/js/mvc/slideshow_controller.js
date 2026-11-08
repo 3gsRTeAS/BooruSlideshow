@@ -148,6 +148,14 @@ class SlideshowController
             _this.gelbApiKeyChanged();
         });
 
+        this._view.rule34UserIdChangedEvent.attach(function () {
+            _this.rule34UserIdChanged();
+        });
+
+        this._view.rule34ApiKeyChangedEvent.attach(function () {
+            _this.rule34ApiKeyChanged();
+        });
+
         this._view.storeHistoryChangedEvent.attach(function () {
             _this.storeHistoryChanged();
         });
@@ -256,6 +264,14 @@ class SlideshowController
         if (searchText == '')
         {
             this._view.displayWarningMessage('The search query is blank.');
+            return;
+        }
+
+        var sitesMissingCredentials = this._model.getSelectedSitesMissingCredentials();
+
+        if (sitesMissingCredentials.length > 0)
+        {
+            this._view.displayWarningMessage(sitesMissingCredentials[0].getMissingCredentialsMessage());
             return;
         }
 
@@ -436,6 +452,18 @@ class SlideshowController
         var gelbApiKey = this._view.getGelbApiKey();
 
         this._model.setGelbApiKey(gelbApiKey);
+    }
+
+    rule34UserIdChanged()
+    {
+        this._model.setRule34UserId(this._view.getRule34UserId());
+        this._model.repingSite(SITE_RULE34);
+    }
+
+    rule34ApiKeyChanged()
+    {
+        this._model.setRule34ApiKey(this._view.getRule34ApiKey());
+        this._model.repingSite(SITE_RULE34);
     }
 
     storeHistoryChanged()

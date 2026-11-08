@@ -201,23 +201,24 @@ class PersonalList
         })
     }
 
-    getImageTagsDerp(id, webRequester)
+    async getImageTagsDerp(id, webRequester)
     {
+        var stored = await DataLoader.storageGet(chrome.storage.local, ['derpibooruApiKey']);
+        var possibleAddedKey = stored.derpibooruApiKey ? '&key=' + encodeURIComponent(stored.derpibooruApiKey) : '';
+
         return new Promise((resolve) => {
-            var possibleAddedKey
-            chrome.storage.sync.get(["derpibooruApiKey"], (obj) => {possibleAddedKey = obj.derpibooruApiKey ? '&key=' + obj.derpibooruApiKey : ''})
-            
-            webRequester.makeWebsiteRequest(`https://derpibooru.org/search.json?q=id%3A${id}${possibleAddedKey}`, () => {
+            webRequester.makeWebsiteRequest(`https://derpibooru.org/search.json?q=id%3A${encodeURIComponent(id)}${possibleAddedKey}`, () => {
                 var data = JSON.parse(arguments[1].xhr.responseText).search[0]
-                var tags = data.tags
-				tags = tags.replace(/,\s/gm,",")
-				tags = tags.replace(/\s/gm,"_")
-                tags = tags.replace(/,/gm," ")
-                
+
                 if(!data){ 
                     resolve("")
                     return
                 }
+
+                var tags = data.tags
+				tags = tags.replace(/,\s/gm,",")
+				tags = tags.replace(/\s/gm,"_")
+                tags = tags.replace(/,/gm," ")
                 resolve(tags)
             })
         })
@@ -237,19 +238,37 @@ class PersonalList
         })
     }
 
-    getImageTagsRule34(id, webRequester)
+    // rule34.xxx's API needs the account's API key and user ID (kept in storage.local).
+    async getImageTagsRule34(id, webRequester)
     {
+        var credentials = await DataLoader.storageGet(chrome.storage.local, ['rule34UserId', 'rule34ApiKey']);
+
+        if (!credentials.rule34UserId || !credentials.rule34ApiKey)
+            return "";
+
+        var url = 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&tags=id%3A' + encodeURIComponent(id) +
+            '&limit=1&user_id=' + encodeURIComponent(credentials.rule34UserId) +
+            '&api_key=' + encodeURIComponent(credentials.rule34ApiKey);
+
         return new Promise((resolve) => {
-            webRequester.makeWebsiteRequest(`https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=id%3A${id}`, () => {
-                // console.log(arguments)
-                var parser = new DOMParser()
-                var data = parser.parseFromString(arguments[1].xhr.responseText, "text/xml")
-                if(!data){ 
-                    resolve("")
-                    return
-                }
-                resolve(data.getElementsByTagName("post")[0].getAttribute("tags"))
-            })
+            webRequester.makeWebsiteRequest(
+                url,
+                (responseText) => {
+                    try
+                    {
+                        var data = new DOMParser().parseFromString(responseText, "text/xml");
+                        var post = data.getElementsByTagName("post")[0];
+
+                        resolve(post ? (post.getAttribute("tags") || "") : "");
+                    }
+                    catch (e)
+                    {
+                        resolve("");
+                    }
+                },
+                () => resolve(""),
+                null,
+                () => resolve(""));
         })
     }
 

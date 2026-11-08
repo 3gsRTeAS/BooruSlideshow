@@ -38,6 +38,8 @@ class SlideshowView
         this.e621ApiKeyChangedEvent = new Event(this);
         this.gelbUserIdChangedEvent = new Event(this);
         this.gelbApiKeyChangedEvent = new Event(this);
+        this.rule34UserIdChangedEvent = new Event(this);
+        this.rule34ApiKeyChangedEvent = new Event(this);
         this.storeHistoryChangedEvent = new Event(this);
         this.clearHistoryClickedEvent = new Event(this);
         this.favoriteKeyPressedEvent = new Event(this);
@@ -151,6 +153,14 @@ class SlideshowView
             _this.updateGelbApiKey();
         });
 
+        this._model.rule34UserIdUpdatedEvent.attach(function () {
+            _this.updateRule34UserId();
+        });
+
+        this._model.rule34ApiKeyUpdatedEvent.attach(function () {
+            _this.updateRule34ApiKey();
+        });
+
         this._model.storeHistoryUpdatedEvent.attach(function () {
             _this.updateStoreHistory();
         });
@@ -255,7 +265,9 @@ class SlideshowView
                 document.activeElement !== _this.uiElements.e621Login &&
                 document.activeElement !== _this.uiElements.e621ApiKey &&
                 document.activeElement !== _this.uiElements.gelbUserId &&
-                document.activeElement !== _this.uiElements.gelbApiKey
+                document.activeElement !== _this.uiElements.gelbApiKey &&
+                document.activeElement !== _this.uiElements.rule34UserId &&
+                document.activeElement !== _this.uiElements.rule34ApiKey
                 ) {
                 
                 if (key == LEFT_ARROW_KEY_ID || key == A_KEY_ID)
@@ -400,6 +412,14 @@ class SlideshowView
             _this.gelbApiKeyChangedEvent.notify();
         });
 
+        this.uiElements.rule34UserId.addEventListener('change', function () {
+            _this.rule34UserIdChangedEvent.notify();
+        });
+
+        this.uiElements.rule34ApiKey.addEventListener('change', function () {
+            _this.rule34ApiKeyChangedEvent.notify();
+        });
+
         this.uiElements.storeHistoryCheckBox.addEventListener('change', function () {
             _this.storeHistoryChangedEvent.notify();
         });
@@ -434,22 +454,22 @@ class SlideshowView
 	}
 	
     displayWarningMessage(message) {
-        this.uiElements.warningMessage.innerHTML = message;
+        this.uiElements.warningMessage.textContent = message;
         this.uiElements.warningMessage.style.display = 'block';
     }
 
     clearWarningMessage() {
-        this.uiElements.warningMessage.innerHTML = '';
+        this.uiElements.warningMessage.textContent = '';
         this.uiElements.warningMessage.style.display = 'none';
     }
 	
 	displayInfoMessage(message) {
-        this.uiElements.infoMessage.innerHTML = message;
+        this.uiElements.infoMessage.textContent = message;
         this.uiElements.infoMessage.style.display = 'block';
     }
 
     clearInfoMessage() {
-        this.uiElements.infoMessage.innerHTML = '';
+        this.uiElements.infoMessage.textContent = '';
         this.uiElements.infoMessage.style.display = 'none';
     }
 
@@ -471,6 +491,23 @@ class SlideshowView
         this.uiElements.currentImage.onload = function () {
             _this.hideLoadingAnimation();
         }
+
+        this.uiElements.currentImage.onerror = function () {
+            // Fires with no src too (after clearImage); only report real failures.
+            if (this.hasAttribute('src'))
+            {
+                _this.hideLoadingAnimation();
+                _this.displayInfoMessage('This image failed to load.');
+            }
+        }
+
+        this.uiElements.currentVideo.addEventListener('error', function () {
+            if (this.hasAttribute('src'))
+            {
+                _this.hideLoadingAnimation();
+                _this.displayInfoMessage('This video failed to load.');
+            }
+        }, false);
 		
 		this.uiElements.currentVideo.addEventListener('loadeddata', function() {
 			_this.hideLoadingAnimation();
@@ -544,6 +581,7 @@ class SlideshowView
 
         logForDev('image = ' + currentSlide.fileUrl);
 
+        currentImage.decoding = 'async';
         currentImage.src = currentSlide.fileUrl;
         currentImage.setAttribute('alt', currentSlide.id);
         currentImage.style.display = 'inline';
@@ -687,7 +725,7 @@ class SlideshowView
 
         logForDev('image cleared');
 
-        currentImage.src = '';
+        currentImage.removeAttribute('src');
         currentImage.removeAttribute('alt');
         currentImage.style.display = 'none';
     }
@@ -698,8 +736,15 @@ class SlideshowView
 
         //logForDev('video cleared');
 
-        //currentVideoSource.src = '';
-        currentVideo.src = '';
+        // Setting src='' makes Firefox try to fetch the page itself; the documented way to
+        // release a media element is pause + removeAttribute('src') + load().
+        if (currentVideo.hasAttribute('src'))
+        {
+            currentVideo.pause();
+            currentVideo.removeAttribute('src');
+            currentVideo.load();
+        }
+
         currentVideo.style.display = 'none';
     }
 	
@@ -749,7 +794,7 @@ class SlideshowView
     }
 
     updateCurrentNumberDisplay() {
-        this.uiElements.currentSlideNumber.innerHTML = this._model.getCurrentSlideNumber();
+        this.uiElements.currentSlideNumber.textContent = this._model.getCurrentSlideNumber();
     }
 
     updateTotalNumberDisplay() {
@@ -759,7 +804,7 @@ class SlideshowView
             totalNumberText += '+';
         }
 
-        this.uiElements.totalSlideNumber.innerHTML = totalNumberText;
+        this.uiElements.totalSlideNumber.textContent = totalNumberText;
     }
 
     updateFirstPreviousButtons() {
@@ -834,7 +879,11 @@ class SlideshowView
         var newThumbnailImage = document.createElement("img");
         newThumbnailImage.id = 'thumbnail-image-' + thumbnailSlideId;
         newThumbnailImage.classList.add("thumbnail-image");
-        newThumbnailImage.src = thumbnailImageUrl;
+        newThumbnailImage.decoding = 'async';
+        newThumbnailImage.loading = 'lazy';
+        newThumbnailImage.referrerPolicy = 'no-referrer';
+        if (thumbnailImageUrl)
+            newThumbnailImage.src = thumbnailImageUrl;
 
         if (showGreyedOut) {
             newThumbnailImage.classList.add("thumbnail-image-greyed-out");
@@ -902,6 +951,12 @@ class SlideshowView
                 this.uiElements.e621LoginContainer.style.display = checked ? 'inline' : 'none';
 				this.uiElements.e621ApiKeyContainer.style.display = checked ? 'inline' : 'none';
 			}
+
+            if (site == SITE_RULE34)
+            {
+                this.uiElements.rule34UserIdContainer.style.display = checked ? 'inline' : 'none';
+                this.uiElements.rule34ApiKeyContainer.style.display = checked ? 'inline' : 'none';
+            }
 
             if (site == SITE_GELBOORU)
             {
@@ -1121,15 +1176,38 @@ class SlideshowView
         return this.uiElements.gelbApiKey.value.trim();
     }
 
+    getRule34UserId() {
+        return this.uiElements.rule34UserId.value.trim();
+    }
+
+    updateRule34UserId() {
+        this.uiElements.rule34UserId.value = this._model.rule34UserId;
+    }
+
+    getRule34ApiKey() {
+        return this.uiElements.rule34ApiKey.value.trim();
+    }
+
+    updateRule34ApiKey() {
+        this.uiElements.rule34ApiKey.value = this._model.rule34ApiKey;
+    }
+
     updateGelbApiKey() {
         this.uiElements.gelbApiKey.value = this._model.gelbApiKey;
     }
 
     openUrlInNewWindow(url) {
-        window.open(url, '_blank');
+        var safeUrl = sanitizeHttpsUrl(url);
+
+        if (safeUrl != null)
+            window.open(safeUrl, '_blank', 'noopener,noreferrer');
     }
 	
 	showSiteOffline(site) {
+		this.showSiteOnlineStatus(site, false);
+	}
+
+	showSiteOnlineStatus(site, isOnline) {
 		var sitesToSearchElements = this.uiElements.sitesToSearch;
 		
 		for (var i = 0; i < sitesToSearchElements.length; i++)
@@ -1138,7 +1216,7 @@ class SlideshowView
 			
 			if (siteToSearch.value == site)
 			{
-				siteToSearch.parentElement.classList.add("siteOffline");
+				siteToSearch.parentElement.classList.toggle("siteOffline", !isOnline);
 				return;
 			}			
 		}
@@ -1158,7 +1236,7 @@ class SlideshowView
         
         let url = currentSlide.fileUrl;
         
-        let filename = "bs/" + url.substring(url.lastIndexOf('/')+1);
+        let filename = buildDownloadFilename(url);
         
         chrome.downloads.download({
             url: currentSlide.fileUrl,
@@ -1190,19 +1268,24 @@ class SlideshowView
 
     toggleTags(update)
     {
-        if(this.uiElements.tags.style.display == "none" && !update)
+        var tagsElement = this.uiElements.tags;
+        var currentSlide = this._model.getCurrentSlide();
+        var tagText = (currentSlide && typeof currentSlide.tags == 'string') ? currentSlide.tags : '';
+
+        // Tags come from a remote site, so they are only ever inserted as text, never as HTML.
+        if (tagsElement.style.display == "none" && !update)
         {
-            this.uiElements.tags.style.display = "block";
-            this.uiElements.tags.innerHTML = this._model.getCurrentSlide().tags;
+            tagsElement.style.display = "block";
+            tagsElement.textContent = tagText;
         }
-        else if (this.uiElements.tags.style.display == "block" && update)
+        else if (tagsElement.style.display == "block" && update)
         {
-            this.uiElements.tags.innerHTML = this._model.getCurrentSlide().tags;
+            tagsElement.textContent = tagText;
         }
         else
         {
-            this.uiElements.tags.style.display = "none";
-            this.uiElements.tags.innerHTML = "";
+            tagsElement.style.display = "none";
+            tagsElement.textContent = "";
         }
     }
 }

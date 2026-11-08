@@ -39,6 +39,8 @@ class DataLoader
         var e621ApiKey = obj['e621ApiKey'];
         var gelbUserId = obj['gelbUserId'];
         var gelbApiKey = obj['gelbApiKey'];
+        var rule34UserId = obj['rule34UserId'];
+        var rule34ApiKey = obj['rule34ApiKey'];
         var storeHistory = obj['storeHistory'];
         var searchHistory = obj['searchHistory'];
         var includeDupes = obj['includeDupes'];
@@ -188,6 +190,16 @@ class DataLoader
                 _this._model.setGelbApiKey(gelbApiKey);
             }
             
+            if (rule34UserId != null && _this._model.rule34UserId != rule34UserId)
+            {
+                _this._model.setRule34UserId(rule34UserId);
+            }
+
+            if (rule34ApiKey != null && _this._model.rule34ApiKey != rule34ApiKey)
+            {
+                _this._model.setRule34ApiKey(rule34ApiKey);
+            }
+            
             if (storeHistory != null)
             {
                 _this._model.setStoreHistory(storeHistory);
@@ -217,7 +229,8 @@ class DataLoader
 
     async getUserSettingsFromBrowser()
     {
-        let storageKeys = [
+        // Settings that are safe to sync.
+        let syncKeys = [
 			'videoVolume',
 			'videoMuted',
 			'sitesToSearch',
@@ -233,34 +246,69 @@ class DataLoader
             'includeSafe',
 			'hideBlacklist',
 			'blacklist',
-            'derpibooruApiKey',
-            'e621Login',
-            'e621ApiKey',
-            'gelbUserId',
-            'gelbApiKey',
             'storeHistory',
             'searchHistory',
-            'includeDupes',
-            'personalListItems'
+            'includeDupes'
         ];
 
-        return new Promise(
-            function (resolve, reject)
+        // Credentials stay on this device (storage.local is never synced), and favorites are
+        // large enough to exceed sync quotas. Older versions kept both of these in storage.sync
+        // (favorites were saved to local but read from sync), so sync is read once as a fallback.
+        let legacySyncKeys = CREDENTIAL_STORAGE_KEYS.concat(['personalListItems']);
+        let localKeys = CREDENTIAL_STORAGE_KEYS.concat(['personalListItems']);
+
+        let syncResult = await DataLoader.storageGet(chrome.storage.sync, syncKeys.concat(legacySyncKeys));
+        let localResult = await DataLoader.storageGet(chrome.storage.local, localKeys);
+
+        let result = Object.assign({}, syncResult);
+
+        let toMigrate = {};
+
+        for (let key of localKeys)
+        {
+            if (localResult[key] !== undefined)
             {
-                chrome.storage.sync.get(
-                    storageKeys,
-                    (result) => {
-                        if (chrome.runtime.lastError)
-                        {
-                            reject(chrome.runtime.lastError);
-                        } else {
-                            console.log("Finished obtaining slideshow settings from browser data.");
-                            resolve(result);
-                        }
-                    }
-                );
+                result[key] = localResult[key];
             }
-        )
+            else if (syncResult[key] !== undefined && CREDENTIAL_STORAGE_KEYS.includes(key))
+            {
+                toMigrate[key] = syncResult[key];
+            }
+        }
+
+        if (Object.keys(toMigrate).length > 0)
+        {
+            chrome.storage.local.set(toMigrate);
+        }
+
+        // Remove credentials from synced storage once they are safely in local storage.
+        let credentialKeysInSync = CREDENTIAL_STORAGE_KEYS.filter(key => syncResult[key] !== undefined);
+
+        if (credentialKeysInSync.length > 0)
+        {
+            chrome.storage.sync.remove(credentialKeysInSync);
+        }
+
+        console.log("Finished obtaining slideshow settings from browser data.");
+
+        return result;
+    }
+
+    static storageGet(area, keys)
+    {
+        return new Promise(function (resolve, reject)
+        {
+            area.get(keys, (result) => {
+                if (chrome.runtime.lastError)
+                {
+                    reject(chrome.runtime.lastError);
+                }
+                else
+                {
+                    resolve(result || {});
+                }
+            });
+        });
     }
 
     addPropertyIfExists(sitesToSearch, cleanSitesToSearch, siteEnum)
@@ -348,27 +396,37 @@ class DataLoader
 	
     saveDerpibooruApiKey()
     {
-        chrome.storage.sync.set({'derpibooruApiKey': this._model.derpibooruApiKey});
+        chrome.storage.local.set({'derpibooruApiKey': this._model.derpibooruApiKey});
     }
 
     saveE621Login()
     {
-        chrome.storage.sync.set({'e621Login': this._model.e621Login});
+        chrome.storage.local.set({'e621Login': this._model.e621Login});
     }
 
     saveE621ApiKey()
     {
-        chrome.storage.sync.set({'e621ApiKey': this._model.e621ApiKey});
+        chrome.storage.local.set({'e621ApiKey': this._model.e621ApiKey});
     }
 
     saveGelbUserId()
     {
-        chrome.storage.sync.set({'gelbUserId': this._model.gelbUserId});
+        chrome.storage.local.set({'gelbUserId': this._model.gelbUserId});
     }
 
     saveGelbApiKey()
     {
-        chrome.storage.sync.set({'gelbApiKey': this._model.gelbApiKey});
+        chrome.storage.local.set({'gelbApiKey': this._model.gelbApiKey});
+    }
+
+    saveRule34UserId()
+    {
+        chrome.storage.local.set({'rule34UserId': this._model.rule34UserId});
+    }
+
+    saveRule34ApiKey()
+    {
+        chrome.storage.local.set({'rule34ApiKey': this._model.rule34ApiKey});
     }
 
     saveStoreHistory()

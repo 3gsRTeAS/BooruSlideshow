@@ -1,64 +1,53 @@
 {
 	"manifest_version": 3,
-
 	"name": "Booru Slideshow",
 	"short_name": "Booru SS",
 	"description": "View a slideshow from a Booru site based on your search.",
-	"version": "10.6",
-
-	"action":
-	{
+	"version": "10.7",
+	"action": {
 		"default_icon": "img/bs_icon_19.png",
 		"default_popup": "popup.html"
 	},
-
-	"browser_specific_settings":
-	{
+	"browser_specific_settings": {
 		"gecko": {
 			"id": "{1bb0deba-416a-4848-b119-9b94f37a268d}",
-			"strict_min_version": "58.0"
+			"strict_min_version": "113.0"
 		}
 	},
-
 	"incognito": "spanning",
-	
-	"icons":
-	{
+	"icons": {
 		"16": "img/bs_icon_16.png",
 		"48": "img/bs_icon_48.png",
 		"128": "img/bs_icon_128.png"
 	},
-	
-	"permissions":
-	[
+	"permissions": [
 		"unlimitedStorage",
 		"storage",
-		"webRequest",
 		"declarativeNetRequestWithHostAccess",
 		"downloads"
 	],
-	"host_permissions":
-	[
+	"host_permissions": [
 		"https://danbooru.donmai.us/*",
 		"https://cdn.donmai.us/*",
 		"https://derpibooru.org/*",
 		"https://e621.net/*",
 		"https://*.gelbooru.com/*",
 		"https://konachan.com/*",
-		"https://rule34.xxx/*",
+		"https://api.rule34.xxx/*",
 		"https://safebooru.org/*",
 		"https://xbooru.com/*",
 		"https://yande.re/*"
 	],
-	"declarative_net_request" :
-	{
-		"rule_resources":
-		[
+	"declarative_net_request": {
+		"rule_resources": [
 			{
 				"id": "ruleset_header_referer",
 				"enabled": true,
 				"path": "rules_header_referer.json"
 			}
 		]
+	},
+	"content_security_policy": {
+		"extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; img-src 'self' https:; media-src 'self' https:; connect-src 'self' https://danbooru.donmai.us https://derpibooru.org https://e621.net https://gelbooru.com https://*.gelbooru.com https://konachan.com https://api.rule34.xxx https://safebooru.org https://xbooru.com https://yande.re"
 	}
 }

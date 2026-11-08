@@ -1,0 +1,15 @@
+{
+  "name": "booru-slideshow-dev",
+  "private": true,
+  "description": "Dev tooling only (tests, lint, build). The extension itself has no runtime dependencies.",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "lint": "web-ext lint --source-dir BooruSlideshow",
+    "build": "web-ext build --source-dir BooruSlideshow --artifacts-dir dist --overwrite-dest",
+    "run:firefox": "web-ext run --source-dir BooruSlideshow"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0",
+    "web-ext": "^8.0.0"
+  }
+}

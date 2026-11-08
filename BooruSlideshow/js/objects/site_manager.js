@@ -82,6 +82,44 @@ class SiteManager
 				},
 				true);
 		}
+		else
+		{
+			callback(this);
+		}
+	}
+
+	// Sites that need an account's API credentials override these.
+	requiresCredentials()
+	{
+		return false;
+	}
+
+	hasCredentials()
+	{
+		return true;
+	}
+
+	getMissingCredentialsMessage()
+	{
+		return '';
+	}
+
+	// Every slide goes through here so remote URLs are validated in one place.
+	pushSlideIfSafe(slide)
+	{
+		var fileUrl = sanitizeHttpsUrl(slide.fileUrl, this.url);
+
+		if (fileUrl == null)
+		{
+			logForDev('Skipping post ' + slide.id + ' because its file URL is not a valid https URL.');
+			return;
+		}
+
+		slide.fileUrl = fileUrl;
+		slide.previewFileUrl = sanitizeHttpsUrl(slide.previewFileUrl, this.url) || (slide.isImageOrGif() ? fileUrl : '');
+		slide.viewableWebsitePostUrl = sanitizeHttpsUrl(slide.viewableWebsitePostUrl, this.url) || this.url;
+
+		this.allUnsortedSlides.push(slide);
 	}
 
 	doesResponseTextIndicateOnline(responseText)
@@ -128,6 +166,7 @@ class SiteManager
 		this.ranIntoErrorWhileSearching = true;
 		
 		var warningMessage = 'Error when calling site ' + this.url;
+		responseText = this.redactSecrets(responseText);
 		
 		var possibleJson = '';
 		
@@ -141,7 +180,8 @@ class SiteManager
 
 			if (statusCode != 400)
 			{
-				console.log(responseText);
+				// Response bodies can echo request parameters, so only log a short, redacted piece.
+				console.log(String(responseText).substring(0, 200));
 			}
 			
 			possibleJson = null;
@@ -149,7 +189,7 @@ class SiteManager
 		
 		if (possibleJson != null && possibleJson.message != null)
 		{
-			warningMessage += ': ' + possibleJson.message;
+			warningMessage += ': ' + this.redactSecrets(String(possibleJson.message));
 		}
 		
 		if (statusCode == 429)
@@ -164,7 +204,18 @@ class SiteManager
 	handleGeneralError(url, hideVisibleWarning = false)
 	{
 		if (!hideVisibleWarning)
-			this.sitesManager.displayWarningMessage('Error making the request to ' + url);
+			this.sitesManager.displayWarningMessage('Error making the request to ' + redactUrl(url));
+	}
+
+	// Secrets known to this site manager (API keys etc.). Overridden by sites that have any.
+	getSecrets()
+	{
+		return [];
+	}
+
+	redactSecrets(text)
+	{
+		return redactSecretsInText(text, this.getSecrets());
 	}
 
 	addSlides(responseText)
@@ -258,6 +309,9 @@ class SiteManager
 
 	getMediaTypeFromPath(filePath)
 	{
+		// Some sites append cache-busting query strings (".webm?123"); judge by the path only.
+		filePath = filePath.split(/[?#]/)[0];
+
 		var fileExtension = filePath.substring(filePath.length - 4);
 		
 		switch (fileExtension.toLowerCase())
@@ -301,7 +355,7 @@ class SiteManager
 	{
 		if (url.substring(0,2) == '//')
 		{
-			url = 'http:' + url;
+			url = 'https:' + url;
 		}
 		
 		return url;

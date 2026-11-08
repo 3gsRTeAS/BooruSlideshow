@@ -31,10 +31,53 @@
 		return { status: response.status, url: response.url, text: text };
 	}
 
+	const MEDIA_PATH = /^\/_(images|thumbs)\/[0-9a-f]{32}\/[^/]+$/;
+	const MAX_MEDIA_BYTES = 100 * 1024 * 1024;
+
+	function isAllowedMedia(rawUrl)
+	{
+		let u;
+
+		try { u = new URL(rawUrl); } catch (e) { return false; }
+
+		return u.origin === 'https://rule34hentai.net' && MEDIA_PATH.test(u.pathname);
+	}
+
+	async function relayMedia(url)
+	{
+		const response = await fetch(url, { method: 'GET', credentials: 'same-origin', redirect: 'follow' });
+		const type = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+		const length = Number(response.headers.get('content-length') || 0);
+
+		// A challenge page is HTML; only real pictures/videos are passed on.
+		if (!response.ok || !/^(image|video)\//.test(type) || length > MAX_MEDIA_BYTES)
+			return { status: response.ok ? 415 : response.status, type: type };
+
+		const data = await response.arrayBuffer();
+
+		return data.byteLength > MAX_MEDIA_BYTES ? { status: 413, type: type } : { status: 200, type: type, data: data };
+	}
+
 	const api = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
 
 	api.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-		if (sender.id !== api.runtime.id || message == null || message.type !== 'bs-r34h-fetch')
+		if (sender.id !== api.runtime.id || message == null)
+			return false;
+
+		if (message.type === 'bs-r34h-media')
+		{
+			if (typeof message.url !== 'string' || !isAllowedMedia(message.url))
+			{
+				sendResponse({ error: 'URL not allowed' });
+				return false;
+			}
+
+			relayMedia(message.url).then(sendResponse, function () { sendResponse({ error: 'fetch failed' }); });
+
+			return true;
+		}
+
+		if (message.type !== 'bs-r34h-fetch')
 			return false;
 
 		if (typeof message.url !== 'string' || !isAllowed(message.url))
@@ -49,5 +92,5 @@
 	});
 
 	if (typeof module !== 'undefined' && module.exports)
-		module.exports = { isAllowed: isAllowed };
+		module.exports = { isAllowed: isAllowed, isAllowedMedia: isAllowedMedia };
 })();

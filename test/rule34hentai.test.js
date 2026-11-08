@@ -309,3 +309,100 @@ test('manifest allows on-demand injection (scripting) and the relay script is gu
 	assert.ok(manifest.permissions.includes('scripting'));
 	assert.match(fs.readFileSync(path.join(ROOT, 'js/content/rule34hentai_relay.js'), 'utf8'), /__bsR34hRelay/);
 });
+
+// ---- media (pictures/videos) are fetched through the open tab ----
+const MEDIA_URL = `https://rule34hentai.net/_images/${MD5}/1%20-%20x.jpg`;
+const THUMB_URL = `https://rule34hentai.net/_thumbs/${MD5}/thumb.jpg`;
+
+function mediaSetup(answers) {
+	const w = app.window;
+	let n = 0, revoked = [];
+	w.URL.createObjectURL = () => 'blob:test-' + (++n);
+	w.URL.revokeObjectURL = (u) => revoked.push(u);
+	const sent = [];
+	const chromeApi = { runtime: {}, tabs: { query: (q, cb) => cb([{ id: 3 }]), sendMessage: (id, msg, cb) => { sent.push(msg); cb(answers(msg)); } } };
+	app.Rule34HentaiMedia.init(chromeApi, () => resp(403, CF));
+	return { sent, revoked, w };
+}
+const okMedia = (w, size = 4, type = 'image/jpeg') => ({ status: 200, type, data: new w.ArrayBuffer(size) });
+
+test('media: only rule34hentai _images/_thumbs https URLs are managed', () => {
+	const M = app.Rule34HentaiMedia;
+	assert.ok(M.isManaged(MEDIA_URL)); assert.ok(M.isManaged(THUMB_URL));
+	for (const u of ['http://rule34hentai.net/_images/x', 'https://evil.example/_images/x', 'https://rule34hentai.net.evil.example/_images/x', 'https://rule34hentai.net/post/list/1', 'https://danbooru.donmai.us/a.jpg', 'nonsense'])
+		assert.ok(!M.isManaged(u), u);
+});
+
+test('media: downloaded via tab, cached, blob URL returned; challenge/non-media answers fall back to the original URL', async () => {
+	const w = app.window;
+	let current = () => okMedia(w);
+	const s = mediaSetup(() => current());
+	assert.strictEqual(await app.Rule34HentaiMedia.getBlobUrl(MEDIA_URL), 'blob:test-1');
+	assert.strictEqual(await app.Rule34HentaiMedia.getBlobUrl(MEDIA_URL), 'blob:test-1');
+	assert.strictEqual(s.sent.length, 1); assert.strictEqual(s.sent[0].type, 'bs-r34h-media');
+	current = () => ({ status: 200, type: 'text/html', data: new w.ArrayBuffer(4) });
+	assert.strictEqual(await app.Rule34HentaiMedia.getBlobUrl(THUMB_URL), null);
+	current = () => ({ status: 403, type: 'text/html' });
+	assert.strictEqual(await app.Rule34HentaiMedia.getBlobUrl(THUMB_URL), null);
+	// failures are not cached: a later success works
+	current = () => okMedia(w);
+	assert.match(await app.Rule34HentaiMedia.getBlobUrl(THUMB_URL), /^blob:/);
+});
+
+test('media: resolveMediaUrl passes normal URLs through synchronously and falls back when the tab cannot help', async () => {
+	mediaSetup(() => null);
+	let got; app.resolveMediaUrl('https://danbooru.donmai.us/a.jpg', (u) => { got = u; });
+	assert.strictEqual(got, 'https://danbooru.donmai.us/a.jpg');
+	got = await new Promise((r) => app.resolveMediaUrl(MEDIA_URL, r));
+	assert.strictEqual(got, MEDIA_URL);
+});
+
+test('media: setMediaSrc sets blob URL; a newer URL for the same element wins', async () => {
+	mediaSetup(() => okMedia(app.window));
+	const img = app.window.document.createElement('img');
+	app.setMediaSrc(img, MEDIA_URL);
+	app.setMediaSrc(img, 'https://danbooru.donmai.us/b.jpg');
+	await new Promise(r => setTimeout(r, 10));
+	assert.strictEqual(img.getAttribute('src'), 'https://danbooru.donmai.us/b.jpg');
+	app.setMediaSrc(img, THUMB_URL);
+	await new Promise(r => setTimeout(r, 10));
+	assert.match(img.getAttribute('src'), /^blob:test-/);
+});
+
+test('media: cache evicts least recently used files over the size cap and revokes their URLs', async () => {
+	const s = mediaSetup(() => okMedia(app.window, 40 * 1024 * 1024));
+	const urls = Array.from({ length: 12 }, (_, i) => `https://rule34hentai.net/_images/${MD5}/f${i}.jpg`);
+	for (const u of urls) await app.Rule34HentaiMedia.getBlobUrl(u);
+	assert.ok(s.revoked.length >= 1);
+	assert.ok(app.Rule34HentaiMedia.totalBytes <= 300 * 1024 * 1024 + 40 * 1024 * 1024);
+});
+
+test('relay content script: media requests validated (sender, URL pattern) and only image/video bodies returned', async () => {
+	const src = fs.readFileSync(path.join(ROOT, 'js/content/rule34hentai_relay.js'), 'utf8');
+	let listener; let ctype = 'image/jpeg', ok = true;
+	const chromeApi = { runtime: { id: 'me', onMessage: { addListener: (l) => { listener = l; } } } };
+	const fetchFn = () => Promise.resolve({ ok, status: ok ? 200 : 403, headers: { get: (h) => h == 'content-type' ? ctype : null }, arrayBuffer: () => Promise.resolve(new ArrayBuffer(3)) });
+	const mod = { exports: {} };
+	new Function('chrome', 'fetch', 'module', src)(chromeApi, fetchFn, mod);
+	const call = (sender, msg) => new Promise((res) => { const r = listener(msg, sender, res); if (r === false) setTimeout(() => res('no-response'), 5); });
+	const good = { type: 'bs-r34h-media', url: MEDIA_URL };
+	assert.strictEqual(await call({ id: 'x' }, good), 'no-response');
+	assert.deepStrictEqual(await call({ id: 'me' }, { type: 'bs-r34h-media', url: 'https://rule34hentai.net/user_admin/x' }), { error: 'URL not allowed' });
+	assert.deepStrictEqual(await call({ id: 'me' }, { type: 'bs-r34h-media', url: 'https://evil.example/_images/' + MD5 + '/a.jpg' }), { error: 'URL not allowed' });
+	const a = await call({ id: 'me' }, good);
+	assert.strictEqual(a.status, 200); assert.strictEqual(a.type, 'image/jpeg'); assert.strictEqual(a.data.byteLength, 3);
+	ctype = 'text/html; charset=UTF-8';
+	assert.strictEqual((await call({ id: 'me' }, good)).status, 415);
+	ok = false;
+	assert.strictEqual((await call({ id: 'me' }, good)).status, 403);
+});
+
+test('manifest CSP lets blob: URLs load as images/media; views and slides use the resolver', () => {
+	const csp = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8')).content_security_policy.extension_pages;
+	assert.match(csp, /img-src[^;]*blob:/); assert.match(csp, /media-src[^;]*blob:/);
+	for (const f of ['js/mvc/slideshow_view.js', 'js/mvc/personal_list_view.js'])
+		assert.match(fs.readFileSync(path.join(ROOT, f), 'utf8'), /setMediaSrc\(currentImage/);
+	assert.match(fs.readFileSync(path.join(ROOT, 'js/objects/slide.js'), 'utf8'), /resolveMediaUrl/);
+	for (const f of ['slideshow.html', 'personal_list.html'])
+		assert.ok(fs.readFileSync(path.join(ROOT, f), 'utf8').includes('r34h_media.js'));
+});

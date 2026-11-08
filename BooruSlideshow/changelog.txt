@@ -4,6 +4,7 @@ Version 10.9
 * Added rule34hentai.net (no login). It has no usable API, so pages are read directly. Because of its Cloudflare check, keep https://rule34hentai.net open in a Firefox tab (let the check finish, reload the tab once); the extension then reads pages through that tab.
 * Search supports rating:e / rating=e, order:score_desc / order=score_desc, other tags, and the extra terms popular_by_day, popular_by_month, popular_by_year (optionally popular_date:YYYY-MM-DD). Each next page goes one period further back. Popular searches can be combined with tags, rating:, ext:, score and size filters.
 * Page parsing now matches the real site markup (checked against pages saved from the live site). The helper script is injected on demand into an already-open rule34hentai.net tab, and error messages say whether no tab was found or the tab could not be read.
+* rule34hentai.net pictures/videos: Cloudflare blocks the extension's own image requests, so the files are now downloaded by your open site tab and shown from local blob: URLs (cached, with a size limit). Downloads work the same way.
 * If the site was offline at startup, a search re-checks it first.
 
 Version 10.8

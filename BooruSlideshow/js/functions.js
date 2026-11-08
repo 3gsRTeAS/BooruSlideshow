@@ -140,6 +140,36 @@ function buildDownloadFilename(url)
 }
 
 // Node (tests) only; harmless in the browser.
+// Calls callback(url) with a URL the page can load. Normal URLs are passed straight through (synchronously);
+// rule34hentai.net files are fetched through the user's open site tab and given as blob: URLs
+// (see js/objects/rule34hentai/r34h_media.js). Falls back to the original URL.
+function resolveMediaUrl(url, callback)
+{
+	if (typeof Rule34HentaiMedia != 'undefined' && Rule34HentaiMedia.isManaged(url))
+	{
+		Rule34HentaiMedia.getBlobUrl(url).then(function (blobUrl) { callback(blobUrl || url); });
+		return;
+	}
+
+	callback(url);
+}
+
+// Sets element.src, resolving the URL first when needed. A newer call for the same element wins.
+function setMediaSrc(element, url)
+{
+	element.__wantedMediaUrl = url;
+
+	resolveMediaUrl(url, function (usableUrl) {
+		if (element.__wantedMediaUrl !== url)
+			return;
+
+		element.src = usableUrl;
+
+		if (element.tagName == 'SOURCE' && element.parentElement && typeof element.parentElement.load == 'function')
+			element.parentElement.load();
+	});
+}
+
 if (typeof module !== 'undefined' && module.exports)
 {
 	module.exports = { sanitizeHttpsUrl, redactUrl, redactSecretsInText, buildDownloadFilename };

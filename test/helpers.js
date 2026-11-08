@@ -22,6 +22,7 @@ const SCRIPTS = [
 	'js/objects/rule34hentai/r34h_parser.js',
 	'js/objects/rule34hentai/r34h_fetcher.js',
 	'js/objects/rule34hentai/r34h_requester.js',
+	'js/objects/rule34hentai/r34h_media.js',
 	'js/objects/site_managers/site_manager_rule34hentai.js',
 	'js/objects/site_managers/site_manager_safebooru.js',
 	'js/objects/site_managers/site_manager_xbooru.js',
@@ -41,7 +42,7 @@ const EXPORTS = `
 window.__t = {
 	SITE_RULE34, SITE_GELBOORU, SITE_SAFEBOORU, SITE_DANBOORU, SITE_E621,
 	MEDIA_TYPE_IMAGE, MEDIA_TYPE_VIDEO, MEDIA_TYPE_GIF, MEDIA_TYPE_UNSUPPORTED,
-	SITE_RULE34HENTAI, SiteManagerRule34Hentai, Rule34HentaiSearch, Rule34HentaiParser, Rule34HentaiFetcher, Rule34HentaiRequester,
+	SITE_RULE34HENTAI, SiteManagerRule34Hentai, Rule34HentaiSearch, Rule34HentaiParser, Rule34HentaiFetcher, Rule34HentaiRequester, Rule34HentaiMedia, setMediaSrc, resolveMediaUrl,
 	SiteManager, SiteManagerRule34, SiteManagerAtfBooru, SITE_ATFBOORU, SiteManagerGelbooru, SiteManagerSafebooru, SiteManagerFactory,
 	Slide, DataLoader, SlideshowModel, SlideshowView, SitesManager,
 	sanitizeHttpsUrl, redactUrl, buildDownloadFilename, CREDENTIAL_STORAGE_KEYS

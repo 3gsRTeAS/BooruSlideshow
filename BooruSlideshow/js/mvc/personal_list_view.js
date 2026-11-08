@@ -367,7 +367,7 @@ class PersonalListView
         var currentImage = this.uiElements.currentImage;
 
         currentImage.decoding = 'async';
-        currentImage.src = currentSlide.fileUrl;
+        setMediaSrc(currentImage, currentSlide.fileUrl);
         currentImage.setAttribute('alt', currentSlide.id);
         currentImage.style.display = 'inline';
 		
@@ -381,7 +381,7 @@ class PersonalListView
 
         logForDev('clearing video1');
 
-        currentVideoSource.src = currentSlide.fileUrl;
+        setMediaSrc(currentVideoSource, currentSlide.fileUrl);
         currentVideo.style.display = 'inline';
 
 		this.clearImage();
@@ -782,10 +782,12 @@ class PersonalListView
         let url = currentSlide.fileUrl;
         let filename = buildDownloadFilename(url);
         
-        chrome.downloads.download({
-            url: currentSlide.fileUrl,
-            filename: filename,
-            conflictAction: "overwrite"
+        resolveMediaUrl(currentSlide.fileUrl, function (usableUrl) {
+            chrome.downloads.download({
+                url: usableUrl,
+                filename: filename,
+                conflictAction: "overwrite"
+            });
         });
     }
 }

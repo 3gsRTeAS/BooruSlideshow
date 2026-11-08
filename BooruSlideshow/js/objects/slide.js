@@ -89,7 +89,11 @@ class Slide
 		image.onload = function(){ finish(true); };
 		image.onerror = function(){ finish(false); };
 
-		image.src = this.fileUrl;
+		resolveMediaUrl(this.fileUrl, function(usableUrl){
+			// The slide may already have finished/failed; assigning src is harmless then.
+			if (slide.preloadingImage === image)
+				image.src = usableUrl;
+		});
 	}
 
 	preloadVideo()
@@ -141,8 +145,13 @@ class Slide
 		video.addEventListener('loadeddata', onLoaded, false);
 		video.addEventListener('error', onError, false);
 
-		video.src = this.fileUrl;
-		video.load();
+		resolveMediaUrl(this.fileUrl, function(usableUrl){
+			if (slide.preloadingVideo === video)
+			{
+				video.src = usableUrl;
+				video.load();
+			}
+		});
 	}
 
 	addCallback(callback)

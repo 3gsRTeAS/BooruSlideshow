@@ -602,7 +602,7 @@ class SlideshowView
         logForDev('image = ' + currentSlide.fileUrl);
 
         currentImage.decoding = 'async';
-        currentImage.src = currentSlide.fileUrl;
+        setMediaSrc(currentImage, currentSlide.fileUrl);
         currentImage.setAttribute('alt', currentSlide.id);
         currentImage.style.display = 'inline';
 		
@@ -617,7 +617,7 @@ class SlideshowView
         logForDev('video = ' + currentSlide.fileUrl);
 
         //currentVideoSource.src = currentSlide.fileUrl;
-        currentVideo.src = currentSlide.fileUrl;
+        setMediaSrc(currentVideo, currentSlide.fileUrl);
         currentVideo.style.display = 'inline';
         //currentVideo.load(); // Firefox workaround to it sometimes not loading videos
 
@@ -903,7 +903,7 @@ class SlideshowView
         newThumbnailImage.loading = 'lazy';
         newThumbnailImage.referrerPolicy = 'no-referrer';
         if (thumbnailImageUrl)
-            newThumbnailImage.src = thumbnailImageUrl;
+            setMediaSrc(newThumbnailImage, thumbnailImageUrl);
 
         if (showGreyedOut) {
             newThumbnailImage.classList.add("thumbnail-image-greyed-out");
@@ -1280,10 +1280,12 @@ class SlideshowView
         
         let filename = buildDownloadFilename(url);
         
-        chrome.downloads.download({
-            url: currentSlide.fileUrl,
-            filename: filename,
-            conflictAction: "overwrite"
+        resolveMediaUrl(currentSlide.fileUrl, function (usableUrl) {
+            chrome.downloads.download({
+                url: usableUrl,
+                filename: filename,
+                conflictAction: "overwrite"
+            });
         });
     }
 

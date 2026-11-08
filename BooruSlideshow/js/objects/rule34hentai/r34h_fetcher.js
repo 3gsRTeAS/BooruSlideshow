@@ -32,10 +32,10 @@ class Rule34HentaiFetcher
 		return { status: response.status, url: response.url, text: text.substring(0, 4 * 1024 * 1024) };
 	}
 
-	ask(tabId, url)
+	ask(tabId, url, type = 'bs-r34h-fetch')
 	{
 		return new Promise((resolve) => {
-			try { this.chrome.tabs.sendMessage(tabId, { type: 'bs-r34h-fetch', url: url }, (r) => resolve(this.chrome.runtime.lastError ? null : r)); }
+			try { this.chrome.tabs.sendMessage(tabId, { type: type, url: url }, (r) => resolve(this.chrome.runtime.lastError ? null : r)); }
 			catch (e) { resolve(null); }
 		});
 	}
@@ -60,7 +60,7 @@ class Rule34HentaiFetcher
 	}
 
 	// Returns { answer, tabCount }. answer is null if no tab could fetch the page.
-	async relay(url)
+	async relay(url, type = 'bs-r34h-fetch')
 	{
 		const tabs = await new Promise((resolve) => {
 			try { this.chrome.tabs.query({ url: 'https://rule34hentai.net/*' }, (t) => resolve(this.chrome.runtime.lastError ? [] : (t || []))); }
@@ -69,12 +69,12 @@ class Rule34HentaiFetcher
 
 		for (const tab of tabs)
 		{
-			let answer = await this.ask(tab.id, url);
+			let answer = await this.ask(tab.id, url, type);
 
 			if (answer == null && await this.inject(tab.id))
-				answer = await this.ask(tab.id, url);
+				answer = await this.ask(tab.id, url, type);
 
-			if (answer && typeof answer.text === 'string' && typeof answer.status === 'number')
+			if (answer && typeof answer.status === 'number' && (typeof answer.text === 'string' || answer.data instanceof ArrayBuffer))
 				return { answer: answer, tabCount: tabs.length };
 		}
 

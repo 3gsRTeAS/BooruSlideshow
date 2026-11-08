@@ -324,7 +324,9 @@
 	#gelb-userid,
 	#gelb-api-key,
 	#rule34-userid,
-	#rule34-api-key {
+	#rule34-api-key,
+	#atf-username,
+	#atf-api-key {
 		background: #181a1f;
 		color: #999;
 	}

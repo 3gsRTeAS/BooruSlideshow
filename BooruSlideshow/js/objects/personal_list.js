@@ -75,6 +75,8 @@ class PersonalList
                 listItem.tags = await _this.getImageTagsE621(listItem.id, webRequester);
             }else if (listItem.siteId == SITE_RULE34){
                 listItem.tags = await _this.getImageTagsRule34(listItem.id, webRequester);
+            }else if (listItem.siteId == SITE_ATFBOORU){
+                listItem.tags = await _this.getImageTagsATF(listItem.id, webRequester);
             }else if (listItem.siteId == SITE_DANBOORU){
                 listItem.tags = await _this.getImageTagsDB(listItem.id, webRequester);
             }else if (listItem.siteId == SITE_DERPIBOORU){
@@ -127,18 +129,37 @@ class PersonalList
         })
     }
 
-    // This is inefficient, but I'm lazy
-    getImageTagsATF(id, webRequester)
+    // ATFBooru rejects anonymous API requests; credentials are kept in storage.local.
+    async getImageTagsATF(id, webRequester)
     {
+        var credentials = await DataLoader.storageGet(chrome.storage.local, ['atfUsername', 'atfApiKey']);
+
+        if (!credentials.atfUsername || !credentials.atfApiKey)
+            return "";
+
+        var url = 'https://booru.allthefallen.moe/posts.json?tags=id%3A' + encodeURIComponent(id) +
+            '&limit=1&login=' + encodeURIComponent(credentials.atfUsername) +
+            '&api_key=' + encodeURIComponent(credentials.atfApiKey);
+
         return new Promise((resolve) => {
-            webRequester.makeWebsiteRequest(`https://booru.allthefallen.moe/posts.json?tags=id%3A${id}`, () => {
-                var data = JSON.parse(arguments[1].xhr.responseText)[0]
-                if(!data){ 
-                    resolve("")
-                    return
-                }
-                resolve(data.tag_string)
-            })
+            webRequester.makeWebsiteRequest(
+                url,
+                (responseText) => {
+                    try
+                    {
+                        var posts = JSON.parse(responseText);
+                        var post = Array.isArray(posts) ? posts[0] : null;
+
+                        resolve(post && typeof post.tag_string == 'string' ? post.tag_string : "");
+                    }
+                    catch (e)
+                    {
+                        resolve("");
+                    }
+                },
+                () => resolve(""),
+                null,
+                () => resolve(""));
         })
     }
 

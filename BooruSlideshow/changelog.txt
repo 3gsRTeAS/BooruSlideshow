@@ -1,5 +1,11 @@
 Changelog
 
+Version 10.8
+* Added booru.allthefallen.moe (ATFBooru) back, using your account username and API key (Danbooru-style login/api_key). Enter them under Sites. They are stored only in local extension storage.
+* If the site answers with its anti-bot web page, you now get a clear message instead of a silent failure.
+* API keys are no longer written to the dev-mode request log.
+* rule34hentai.net is intentionally NOT supported: no documented API or terms were found.
+
 Version 10.7
 * rule34.xxx now uses its authenticated API (api.rule34.xxx). Enter your rule34.xxx API key and user ID under Sites (same idea as Gelbooru). Without them rule34.xxx is shown as offline and a clear message is displayed.
 * Credentials (derpibooru/e621/gelbooru/rule34) are now kept in local extension storage instead of synced storage; existing values are moved automatically.

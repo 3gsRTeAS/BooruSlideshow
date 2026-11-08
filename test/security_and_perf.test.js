@@ -225,10 +225,11 @@ test('favorites saved to local storage are the ones loaded', async () => {
 test('credentials are saved to local, never to sync', () => {
 	const sync = {}, local = {};
 	const a = loadApp({ chrome: fakeChrome({ sync, local }) });
-	const model = { rule34ApiKey: 'K', rule34UserId: '1', gelbApiKey: 'G', gelbUserId: '2', e621ApiKey: 'E', e621Login: 'me', derpibooruApiKey: 'D' };
+	const model = { rule34ApiKey: 'K', rule34UserId: '1', gelbApiKey: 'G', gelbUserId: '2', e621ApiKey: 'E', e621Login: 'me', derpibooruApiKey: 'D', atfUsername: 'u', atfApiKey: 'A' };
 	const loader = new a.DataLoader(model);
 	loader.saveRule34ApiKey(); loader.saveRule34UserId(); loader.saveGelbApiKey(); loader.saveGelbUserId();
 	loader.saveE621ApiKey(); loader.saveE621Login(); loader.saveDerpibooruApiKey();
+	loader.saveAtfUsername(); loader.saveAtfApiKey();
 	assert.deepStrictEqual(Object.keys(sync), []);
 	assert.deepStrictEqual(Object.keys(local).sort(), [...a.CREDENTIAL_STORAGE_KEYS].sort());
 });

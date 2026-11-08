@@ -148,6 +148,14 @@ class SlideshowController
             _this.gelbApiKeyChanged();
         });
 
+        this._view.atfUsernameChangedEvent.attach(function () {
+            _this.atfUsernameChanged();
+        });
+
+        this._view.atfApiKeyChangedEvent.attach(function () {
+            _this.atfApiKeyChanged();
+        });
+
         this._view.rule34UserIdChangedEvent.attach(function () {
             _this.rule34UserIdChanged();
         });
@@ -452,6 +460,18 @@ class SlideshowController
         var gelbApiKey = this._view.getGelbApiKey();
 
         this._model.setGelbApiKey(gelbApiKey);
+    }
+
+    atfUsernameChanged()
+    {
+        this._model.setAtfUsername(this._view.getAtfUsername());
+        this._model.repingSite(SITE_ATFBOORU);
+    }
+
+    atfApiKeyChanged()
+    {
+        this._model.setAtfApiKey(this._view.getAtfApiKey());
+        this._model.repingSite(SITE_ATFBOORU);
     }
 
     rule34UserIdChanged()

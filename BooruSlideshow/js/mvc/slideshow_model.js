@@ -9,6 +9,7 @@ class SlideshowModel{
         this.searchText = "";
         
         this.sitesToSearch = {
+            [SITE_ATFBOORU]: false,
             [SITE_DANBOORU]: false,
             [SITE_DERPIBOORU]: false,
             [SITE_E621]: false,
@@ -37,6 +38,8 @@ class SlideshowModel{
         this.e621ApiKey = ''
         this.gelbUserId = ''
         this.gelbApiKey = ''
+        this.atfUsername = '';
+        this.atfApiKey = '';
         this.rule34UserId = '';
         this.rule34ApiKey = '';
         this.storeHistory = true;
@@ -71,6 +74,8 @@ class SlideshowModel{
         this.e621ApiKeyUpdatedEvent = new Event(this);
         this.gelbUserIdUpdatedEvent = new Event(this);
         this.gelbApiKeyUpdatedEvent = new Event(this);
+        this.atfUsernameUpdatedEvent = new Event(this);
+        this.atfApiKeyUpdatedEvent = new Event(this);
         this.rule34UserIdUpdatedEvent = new Event(this);
         this.rule34ApiKeyUpdatedEvent = new Event(this);
         this.storeHistoryUpdatedEvent = new Event(this);
@@ -92,6 +97,7 @@ class SlideshowModel{
 		
 		var standardPageLimit = 100;
 		
+        this.sitesManager.addSite(SITE_ATFBOORU, standardPageLimit);
         this.sitesManager.addSite(SITE_DANBOORU, standardPageLimit);
         this.sitesManager.addSite(SITE_DERPIBOORU, 50);
         this.sitesManager.addSite(SITE_E621, standardPageLimit);
@@ -634,6 +640,24 @@ class SlideshowModel{
         this.dataLoader.saveGelbApiKey();
 
         this.gelbApiKeyUpdatedEvent.notify();
+    }
+
+    setAtfUsername(atfUsername)
+    {
+        this.atfUsername = atfUsername;
+
+        this.dataLoader.saveAtfUsername();
+
+        this.atfUsernameUpdatedEvent.notify();
+    }
+
+    setAtfApiKey(atfApiKey)
+    {
+        this.atfApiKey = atfApiKey;
+
+        this.dataLoader.saveAtfApiKey();
+
+        this.atfApiKeyUpdatedEvent.notify();
     }
 
     setRule34UserId(rule34UserId)

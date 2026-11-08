@@ -39,6 +39,8 @@ class DataLoader
         var e621ApiKey = obj['e621ApiKey'];
         var gelbUserId = obj['gelbUserId'];
         var gelbApiKey = obj['gelbApiKey'];
+        var atfUsername = obj['atfUsername'];
+        var atfApiKey = obj['atfApiKey'];
         var rule34UserId = obj['rule34UserId'];
         var rule34ApiKey = obj['rule34ApiKey'];
         var storeHistory = obj['storeHistory'];
@@ -99,6 +101,7 @@ class DataLoader
             {
                 let cleanSitesToSearch = Object.assign({}, _this.sitesToSearch);
 
+                _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_ATFBOORU);
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_DANBOORU);
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_DERPIBOORU);
                 _this.addPropertyIfExists(sitesToSearch, cleanSitesToSearch, SITE_E621);
@@ -190,6 +193,16 @@ class DataLoader
                 _this._model.setGelbApiKey(gelbApiKey);
             }
             
+            if (atfUsername != null && _this._model.atfUsername != atfUsername)
+            {
+                _this._model.setAtfUsername(atfUsername);
+            }
+
+            if (atfApiKey != null && _this._model.atfApiKey != atfApiKey)
+            {
+                _this._model.setAtfApiKey(atfApiKey);
+            }
+
             if (rule34UserId != null && _this._model.rule34UserId != rule34UserId)
             {
                 _this._model.setRule34UserId(rule34UserId);
@@ -417,6 +430,16 @@ class DataLoader
     saveGelbApiKey()
     {
         chrome.storage.local.set({'gelbApiKey': this._model.gelbApiKey});
+    }
+
+    saveAtfUsername()
+    {
+        chrome.storage.local.set({'atfUsername': this._model.atfUsername});
+    }
+
+    saveAtfApiKey()
+    {
+        chrome.storage.local.set({'atfApiKey': this._model.atfApiKey});
     }
 
     saveRule34UserId()

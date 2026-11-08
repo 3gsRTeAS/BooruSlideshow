@@ -38,6 +38,8 @@ class SlideshowView
         this.e621ApiKeyChangedEvent = new Event(this);
         this.gelbUserIdChangedEvent = new Event(this);
         this.gelbApiKeyChangedEvent = new Event(this);
+        this.atfUsernameChangedEvent = new Event(this);
+        this.atfApiKeyChangedEvent = new Event(this);
         this.rule34UserIdChangedEvent = new Event(this);
         this.rule34ApiKeyChangedEvent = new Event(this);
         this.storeHistoryChangedEvent = new Event(this);
@@ -153,6 +155,14 @@ class SlideshowView
             _this.updateGelbApiKey();
         });
 
+        this._model.atfUsernameUpdatedEvent.attach(function () {
+            _this.updateAtfUsername();
+        });
+
+        this._model.atfApiKeyUpdatedEvent.attach(function () {
+            _this.updateAtfApiKey();
+        });
+
         this._model.rule34UserIdUpdatedEvent.attach(function () {
             _this.updateRule34UserId();
         });
@@ -266,6 +276,8 @@ class SlideshowView
                 document.activeElement !== _this.uiElements.e621ApiKey &&
                 document.activeElement !== _this.uiElements.gelbUserId &&
                 document.activeElement !== _this.uiElements.gelbApiKey &&
+                document.activeElement !== _this.uiElements.atfUsername &&
+                document.activeElement !== _this.uiElements.atfApiKey &&
                 document.activeElement !== _this.uiElements.rule34UserId &&
                 document.activeElement !== _this.uiElements.rule34ApiKey
                 ) {
@@ -410,6 +422,14 @@ class SlideshowView
 
         this.uiElements.gelbApiKey.addEventListener('change', function () {
             _this.gelbApiKeyChangedEvent.notify();
+        });
+
+        this.uiElements.atfUsername.addEventListener('change', function () {
+            _this.atfUsernameChangedEvent.notify();
+        });
+
+        this.uiElements.atfApiKey.addEventListener('change', function () {
+            _this.atfApiKeyChangedEvent.notify();
         });
 
         this.uiElements.rule34UserId.addEventListener('change', function () {
@@ -952,6 +972,12 @@ class SlideshowView
 				this.uiElements.e621ApiKeyContainer.style.display = checked ? 'inline' : 'none';
 			}
 
+            if (site == SITE_ATFBOORU)
+            {
+                this.uiElements.atfUsernameContainer.style.display = checked ? 'inline' : 'none';
+                this.uiElements.atfApiKeyContainer.style.display = checked ? 'inline' : 'none';
+            }
+
             if (site == SITE_RULE34)
             {
                 this.uiElements.rule34UserIdContainer.style.display = checked ? 'inline' : 'none';
@@ -1174,6 +1200,22 @@ class SlideshowView
 
     getGelbApiKey() {
         return this.uiElements.gelbApiKey.value.trim();
+    }
+
+    getAtfUsername() {
+        return this.uiElements.atfUsername.value.trim();
+    }
+
+    updateAtfUsername() {
+        this.uiElements.atfUsername.value = this._model.atfUsername;
+    }
+
+    getAtfApiKey() {
+        return this.uiElements.atfApiKey.value.trim();
+    }
+
+    updateAtfApiKey() {
+        this.uiElements.atfApiKey.value = this._model.atfApiKey;
     }
 
     getRule34UserId() {

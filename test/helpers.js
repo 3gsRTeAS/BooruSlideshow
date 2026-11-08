@@ -11,6 +11,7 @@ const SCRIPTS = [
 	'js/functions.js',
 	'js/objects/web_requester.js',
 	'js/objects/site_manager.js',
+	'js/objects/site_managers/site_manager_atfbooru.js',
 	'js/objects/site_managers/site_manager_danbooru.js',
 	'js/objects/site_managers/site_manager_derpibooru.js',
 	'js/objects/site_managers/site_manager_e621.js',
@@ -35,7 +36,7 @@ const EXPORTS = `
 window.__t = {
 	SITE_RULE34, SITE_GELBOORU, SITE_SAFEBOORU, SITE_DANBOORU, SITE_E621,
 	MEDIA_TYPE_IMAGE, MEDIA_TYPE_VIDEO, MEDIA_TYPE_GIF, MEDIA_TYPE_UNSUPPORTED,
-	SiteManager, SiteManagerRule34, SiteManagerGelbooru, SiteManagerSafebooru, SiteManagerFactory,
+	SiteManager, SiteManagerRule34, SiteManagerAtfBooru, SITE_ATFBOORU, SiteManagerGelbooru, SiteManagerSafebooru, SiteManagerFactory,
 	Slide, DataLoader, SlideshowModel, SlideshowView, SitesManager,
 	sanitizeHttpsUrl, redactUrl, buildDownloadFilename, CREDENTIAL_STORAGE_KEYS
 };`;
@@ -63,6 +64,7 @@ function fakeSitesManager(modelOverrides = {})
 		includeExplicit: true, includeQuestionable: true, includeSafe: true,
 		blacklist: '',
 		rule34UserId: '', rule34ApiKey: '',
+		atfUsername: '', atfApiKey: '',
 		gelbUserId: '', gelbApiKey: '',
 		areSomeTagsAreBlacklisted(tags) {
 			const bl = new Set(this.blacklist.split(/\s+/).filter(Boolean));

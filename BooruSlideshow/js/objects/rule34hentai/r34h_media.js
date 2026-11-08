@@ -79,7 +79,7 @@ class Rule34HentaiMedia
 			const relayed = await Rule34HentaiMedia.fetcher.relay(url, 'bs-r34h-media');
 			const a = relayed.answer;
 
-			if (a == null || a.status !== 200 || !(a.data instanceof ArrayBuffer))
+			if (a == null || a.status !== 200 || a.data == null || typeof a.data.byteLength !== 'number')
 			{
 				Rule34HentaiMedia.warn(a == null
 					? (relayed.tabCount == 0 ? 'no open rule34hentai.net tab' : 'the open tab did not answer; reload that tab (F5). Details: ' + (Rule34HentaiMedia.fetcher.problems.join(' | ') || 'none'))

@@ -93,7 +93,8 @@ class Rule34HentaiFetcher
 			if (answer == null && await this.inject(tab.id))
 				answer = await this.ask(tab.id, url, type);
 
-			if (answer && typeof answer.status === 'number' && (typeof answer.text === 'string' || answer.data instanceof ArrayBuffer))
+			// Not `instanceof ArrayBuffer`: data coming from another script context is a different realm's object.
+			if (answer && typeof answer.status === 'number' && (type === 'bs-r34h-media' || typeof answer.text === 'string'))
 				return { answer: answer, tabCount: tabs.length };
 		}
 

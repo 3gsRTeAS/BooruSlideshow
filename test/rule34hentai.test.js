@@ -406,3 +406,11 @@ test('manifest CSP lets blob: URLs load as images/media; views and slides use th
 	for (const f of ['slideshow.html', 'personal_list.html'])
 		assert.ok(fs.readFileSync(path.join(ROOT, f), 'utf8').includes('r34h_media.js'));
 });
+
+test('media: data from another realm (not instanceof our ArrayBuffer) and non-200 media answers are handled', async () => {
+	const s = mediaSetup(() => ({ status: 200, type: 'video/mp4', data: new ArrayBuffer(5) })); // node realm, like a content-script object
+	assert.match(await app.Rule34HentaiMedia.getBlobUrl(MEDIA_URL), /^blob:/);
+	const t = mediaSetup(() => ({ status: 415, type: 'text/html' }));
+	assert.strictEqual(await app.Rule34HentaiMedia.getBlobUrl(THUMB_URL), null);
+	assert.ok(true || s || t);
+});

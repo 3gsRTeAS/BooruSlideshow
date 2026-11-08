@@ -34,6 +34,7 @@
 	}
 
 	const MEDIA_PATH = /^\/_(images|thumbs)\/[0-9a-f]{32}\/[^/]+$/;
+	const MEDIA_TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', avif: 'image/avif', bmp: 'image/bmp', webm: 'video/webm', mp4: 'video/mp4', mkv: 'video/x-matroska', mov: 'video/quicktime' };
 	const MAX_MEDIA_BYTES = 100 * 1024 * 1024;
 
 	function isAllowedMedia(rawUrl)
@@ -51,13 +52,17 @@
 		const type = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
 		const length = Number(response.headers.get('content-length') || 0);
 
-		// A challenge page is HTML; only real pictures/videos are passed on.
-		if (!response.ok || !/^(image|video)\//.test(type) || length > MAX_MEDIA_BYTES)
-			return { status: response.ok ? 415 : response.status, type: type };
+		// The site may send no (or a generic) content type, so fall back to the file extension. A
+		// challenge page is HTML/text and is never passed on.
+		const fromExt = MEDIA_TYPES[(new URL(url).pathname.split('.').pop() || '').toLowerCase()] || '';
+		const usable = /^(image|video)\//.test(type) ? type : ((type === '' || type === 'application/octet-stream' || type === 'binary/octet-stream') ? fromExt : '');
+
+		if (!response.ok || usable === '' || length > MAX_MEDIA_BYTES)
+			return { status: response.ok ? 415 : response.status, type: type || '(none)' };
 
 		const data = await response.arrayBuffer();
 
-		return data.byteLength > MAX_MEDIA_BYTES ? { status: 413, type: type } : { status: 200, type: type, data: data };
+		return data.byteLength > MAX_MEDIA_BYTES ? { status: 413, type: usable } : { status: 200, type: usable, data: data };
 	}
 
 	const api = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;

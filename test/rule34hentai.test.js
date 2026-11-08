@@ -393,6 +393,12 @@ test('relay content script: media requests validated (sender, URL pattern) and o
 	assert.strictEqual(a.status, 200); assert.strictEqual(a.type, 'image/jpeg'); assert.strictEqual(a.data.byteLength, 3);
 	ctype = 'text/html; charset=UTF-8';
 	assert.strictEqual((await call({ id: 'me' }, good)).status, 415);
+	ctype = ''; // no content type: judged by the file extension
+	assert.strictEqual((await call({ id: 'me' }, good)).type, 'image/jpeg');
+	ctype = 'application/octet-stream';
+	assert.strictEqual((await call({ id: 'me' }, { type: 'bs-r34h-media', url: `https://rule34hentai.net/_images/${MD5}/v.mp4` })).type, 'video/mp4');
+	ctype = 'application/json';
+	assert.strictEqual((await call({ id: 'me' }, good)).status, 415);
 	ok = false;
 	assert.strictEqual((await call({ id: 'me' }, good)).status, 403);
 });
